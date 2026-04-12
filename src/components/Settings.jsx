@@ -482,7 +482,7 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData,
                   <input
                     type="text"
                     value={assetDraft.ticker}
-                    onChange={(event) => setAssetDraft((current) => ({ ...current, ticker: event.target.value.toUpperCase() }))}
+                    onChange={(event) => setAssetDraft((current) => ({ ...current, ticker: event.target.value }))}
                     className="w-full rounded-2xl border border-white/10 bg-panel px-4 py-3 text-white outline-none transition focus:border-accent"
                   />
                 </label>

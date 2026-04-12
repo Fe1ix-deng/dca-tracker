@@ -3,6 +3,7 @@ import { CalendarDays, LoaderCircle, RefreshCcw } from 'lucide-react'
 import { getPeriodicAmount, getSuggestedShares as getDcaSuggestedShares } from '../utils/dcaCalc'
 import {
   calcAllTargets,
+  getInitialTargetValue,
   getRequiredInvestment,
   getSuggestedShares as getVaSuggestedShares,
   getUpdatedShares,
@@ -44,15 +45,35 @@ export default function OperationPanel({ plan, records, onSaveRecord, onNavigate
       return
     }
 
+    const currentPeriod = plan?.budgetMode === 'open-ended'
+      ? Math.max(Number(plan.currentPeriod) || 0, 0)
+      : Math.min(Number(plan.currentPeriod) || 0, Math.max(0, (Number(plan.totalPeriods) || 1) - 1))
+    const targetMatrix = calcAllTargets(plan)
+
     setAssetStates(
-      plan.assets.map((asset) => ({
-        ticker: asset.ticker,
-        price: 0,
-        priceSource: 'manual',
-        loading: false,
-        actualShares: 0,
-        fetchError: '',
-      })),
+      plan.assets.map((asset, index) => {
+        const bootstrapTargetValue = plan.strategy === 'VA' && currentPeriod === 0
+          ? getPeriodicAmount(plan, asset.weight)
+          : plan.strategy === 'VA'
+            ? Number(targetMatrix?.[currentPeriod]?.[index] || 0)
+            : getPeriodicAmount(plan, asset.weight)
+        const bootstrapRequiredAmount = plan.strategy === 'VA' && currentPeriod === 0
+          ? getPeriodicAmount(plan, asset.weight)
+          : plan.strategy === 'VA'
+            ? getRequiredInvestment(0, bootstrapTargetValue)
+            : getPeriodicAmount(plan, asset.weight)
+
+        return {
+          ticker: asset.ticker,
+          price: 0,
+          priceSource: 'manual',
+          loading: false,
+          actualShares: 0,
+          defaultSuggestedShares: 0,
+          bootstrapRequiredAmount,
+          fetchError: '',
+        }
+      }),
     )
   }, [plan])
 
@@ -82,10 +103,14 @@ export default function OperationPanel({ plan, records, onSaveRecord, onNavigate
     const price = Number(state.price) || 0
     const currentValueBefore = roundToTwo((Number(asset.currentShares) || 0) * price)
     const targetValue = plan.strategy === 'VA'
-      ? Number(targetMatrix?.[currentPeriod]?.[index] || 0)
+      ? currentPeriod === 0
+        ? getInitialTargetValue(asset.weight, plan)
+        : Number(targetMatrix?.[currentPeriod]?.[index] || 0)
       : getPeriodicAmount(plan, asset.weight)
     const requiredAmount = plan.strategy === 'VA'
-      ? getRequiredInvestment(currentValueBefore, targetValue)
+      ? currentPeriod === 0
+        ? roundToTwo(getPeriodicAmount(plan, asset.weight))
+        : getRequiredInvestment(currentValueBefore, targetValue)
       : getPeriodicAmount(plan, asset.weight)
     const suggestedShares = plan.strategy === 'VA'
       ? getVaSuggestedShares(requiredAmount, price)
@@ -100,8 +125,8 @@ export default function OperationPanel({ plan, records, onSaveRecord, onNavigate
       targetValue: roundToTwo(targetValue),
       requiredAmount: roundToTwo(requiredAmount),
       suggestedShares,
-      actualShares,
-      actualAmount,
+      actualShares: Number(state.actualShares) > 0 ? actualShares : suggestedShares,
+      actualAmount: roundToTwo((Number(state.actualShares) > 0 ? actualShares : suggestedShares) * price),
     }
   })
 

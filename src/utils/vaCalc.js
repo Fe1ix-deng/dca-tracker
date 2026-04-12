@@ -47,6 +47,11 @@ function getAssetPeriodicContribution(assetWeight, plan = {}) {
   return remainingBudget / remainingPeriods
 }
 
+function getInitialTargetValue(assetWeight, plan = {}) {
+  const deployableBudget = getDeployableBudget(plan)
+  return roundToTwo(deployableBudget * (Number(assetWeight) || 0) * getFirstPeriodRatio(plan))
+}
+
 export function getTargetValue(periodIndex, assetWeight, plan = {}) {
   const normalizedPeriodIndex = Math.max(0, Number(periodIndex) || 0)
   const normalizedAssetWeight = Number(assetWeight) || 0
@@ -123,3 +128,5 @@ export function calculateVaRecommendation({
     gap: roundToTwo((Number(targetValue) || 0) - (Number(currentValue) || 0)),
   }
 }
+
+export { getInitialTargetValue }
