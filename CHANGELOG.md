@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.1.0 - 2026-07-11
+
+### Changed
+- Restyled light and dark themes with a Linear-inspired neutral palette and lavender-blue accent.
+
 ## 2.0.0 - 2026-07-01
 
 ### Added
