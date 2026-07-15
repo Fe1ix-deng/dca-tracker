@@ -287,7 +287,9 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
         return
       }
 
-      const confirmed = window.confirm('导入备份将覆盖当前所有计划和历史记录，确认继续？')
+      const confirmed = window.confirm(
+        '导入前会先自动导出一份当前数据的安全备份到你的下载目录，然后用导入的文件整体覆盖现有计划和历史记录，确认继续？',
+      )
       if (!confirmed) {
         return
       }

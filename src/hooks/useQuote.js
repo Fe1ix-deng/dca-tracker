@@ -1,53 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
-
-const API_BASE_URL = 'https://api.twelvedata.com/price'
-const API_KEY = import.meta.env.VITE_TWELVE_DATA_KEY
+import { fetchMarketQuotes } from '../services/marketQuotes'
 
 function roundQuotePrice(value) {
   const numeric = Number.parseFloat(value)
   return Number.isFinite(numeric) ? Number(numeric.toFixed(2)) : null
-}
-
-function getReadableErrorMessage(data, error) {
-  if (!API_KEY) {
-    return '未配置 Twelve Data API Key，请检查 .env 或部署环境变量。'
-  }
-
-  if (error?.name === 'AbortError' || error?.name === 'TimeoutError') {
-    return '请求超时，请稍后重试或手动输入。'
-  }
-
-  if (error instanceof TypeError) {
-    return '网络异常，可能已断网或接口不可达，请手动输入。'
-  }
-
-  if (data?.code === 401 || data?.status === 'error') {
-    if (String(data?.message || '').toLowerCase().includes('api key')) {
-      return 'API Key 无效，请检查 Twelve Data 配置。'
-    }
-  }
-
-  if (data?.code === 429 || String(data?.message || '').includes('API credits')) {
-    return 'API 调用额度已用尽，请稍后再试或手动输入。'
-  }
-
-  if (String(data?.message || '').toLowerCase().includes('symbol') || String(data?.message || '').toLowerCase().includes('ticker')) {
-    return 'Ticker 不存在或格式无效，请检查后重试。'
-  }
-
-  return '获取失败，请手动输入。'
-}
-
-function createTimeoutSignal(timeoutMs = 5000) {
-  const controller = new AbortController()
-  const timeoutId = setTimeout(() => {
-    controller.abort()
-  }, timeoutMs)
-
-  return {
-    signal: controller.signal,
-    clear: () => clearTimeout(timeoutId),
-  }
 }
 
 export async function fetchQuote(ticker) {
@@ -59,41 +15,19 @@ export async function fetchQuote(ticker) {
     }
   }
 
-  if (!API_KEY) {
+  const result = await fetchMarketQuotes([symbol])
+  const roundedPrice = roundQuotePrice(result.quotes?.[symbol]?.price)
+
+  if (roundedPrice === null) {
     return {
       price: null,
-      error: '未配置 Twelve Data API Key，请检查 .env 或部署环境变量。',
+      error: result.error || '获取失败，请手动输入。',
     }
   }
 
-  const url = `${API_BASE_URL}?symbol=${encodeURIComponent(symbol)}&apikey=${API_KEY}`
-
-  let timeout
-  try {
-    timeout = createTimeoutSignal()
-    const res = await fetch(url, { signal: timeout.signal })
-    const data = await res.json()
-    const roundedPrice = roundQuotePrice(data?.price)
-
-    if (roundedPrice !== null) {
-      return {
-        price: roundedPrice,
-        error: '',
-      }
-    }
-
-    return {
-      price: null,
-      error: getReadableErrorMessage(data, null),
-    }
-  } catch (error) {
-    console.warn(`Twelve Data quote fetch failed for ${symbol}`, error)
-    return {
-      price: null,
-      error: getReadableErrorMessage(null, error),
-    }
-  } finally {
-    timeout?.clear()
+  return {
+    price: roundedPrice,
+    error: '',
   }
 }
 

@@ -1,7 +1,5 @@
 import { getDeployableBudget } from './budget'
 
-const OPEN_ENDED_PLACEHOLDER_PERIODS = 9999
-
 function roundToTwo(value) {
   return Number((Number(value) || 0).toFixed(2))
 }
@@ -83,10 +81,18 @@ export function getUpdatedShares(previousShares, actualSharesBought) {
 }
 
 export function calcAllTargets(plan = {}) {
-  const totalPeriods = isOpenEndedPlan(plan)
-    ? Math.max(Number(plan.currentPeriod) || 0, OPEN_ENDED_PLACEHOLDER_PERIODS)
-    : Math.max(0, Number(plan.totalPeriods) || 0)
   const assets = Array.isArray(plan.assets) ? plan.assets : []
+  // Open-ended plans used to always compute a fixed 9999-period matrix here,
+  // regardless of how far the plan had actually progressed. Every caller only
+  // ever reads up to index `plan.currentPeriod` (the next period to preview
+  // in OperationPanel; rebuildPlanState only iterates over this plan's own
+  // records, whose count rebuildPlanState itself keeps in sync with
+  // currentPeriod). So `currentPeriod + 1` rows is always enough, and it
+  // grows naturally with real usage instead of doing ~50M wasted iterations
+  // per asset on every save/edit for a brand new plan.
+  const totalPeriods = isOpenEndedPlan(plan)
+    ? Math.max(Number(plan.currentPeriod) || 0, 0) + 1
+    : Math.max(0, Number(plan.totalPeriods) || 0)
 
   return Array.from({ length: totalPeriods }, (_, periodIndex) =>
     assets.map((asset) => getTargetValue(periodIndex, Number(asset.weight) || 0, plan)),

@@ -22,9 +22,22 @@ const HISTORICAL_YIELDS = {
 
 const DEFAULT_YIELD = HISTORICAL_YIELDS._default
 
+function roundTo4(value) {
+  return Number((Number(value) || 0).toFixed(4))
+}
+
 function roundDownToStep(value, step = 0.05) {
   const numeric = Number(value) || 0
-  return Math.floor(numeric / step) * step
+  const ratio = numeric / step
+  // Floating point division can land just under a whole step (e.g. 0.15 / 0.05
+  // evaluates to 2.9999999999999996 in JS), which would silently floor down to
+  // the wrong bucket. Snapping the ratio to 8 decimal places before flooring
+  // corrects for that representation error without affecting real fractional
+  // values.
+  const correctedRatio = Math.round(ratio * 1e8) / 1e8
+  // The final multiplication (e.g. 3 * 0.05) can itself reintroduce tiny
+  // float noise (0.15000000000000002), so round once more before returning.
+  return roundTo4(Math.floor(correctedRatio) * step)
 }
 
 export function estimateTargetYield(assets = []) {
@@ -52,8 +65,8 @@ export function estimateTargetYield(assets = []) {
 
   return {
     estimatedYield,
-    minYield: Math.max(0.05, estimatedYield - 0.05),
-    maxYield: estimatedYield + 0.05,
+    minYield: roundTo4(Math.max(0.05, estimatedYield - 0.05)),
+    maxYield: roundTo4(estimatedYield + 0.05),
     breakdown: safeAssets.map((asset) => {
       const ticker = String(asset.ticker || '').trim().toUpperCase()
       return {

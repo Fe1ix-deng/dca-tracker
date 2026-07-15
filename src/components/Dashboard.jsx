@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { ArrowRight } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { ArrowRight, RefreshCcw } from 'lucide-react'
 import {
   Area,
   AreaChart,
@@ -16,6 +16,8 @@ import {
 } from 'recharts'
 import { getDeployableBudget, getRemainingDeployableBudget } from '../utils/budget'
 import { calculateAverageCost, calculatePriceGapPct } from '../utils/portfolioCost'
+import { fetchMarketQuotes } from '../services/marketQuotes'
+import { getQuoteDisplayState, resolveMarketPrices } from '../utils/marketSnapshot'
 
 const PIE_COLORS = [
   'rgb(var(--color-accent-rgb))',
@@ -114,6 +116,19 @@ function formatSignedMoney(value) {
   return `${numeric >= 0 ? '+' : '-'}${formatted}`
 }
 
+function formatQuoteTime(value) {
+  const timestamp = new Date(value)
+  if (Number.isNaN(timestamp.getTime())) {
+    return ''
+  }
+
+  return new Intl.DateTimeFormat('zh-CN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(timestamp)
+}
+
 function getProfitLabel(value) {
   return (Number(value) || 0) >= 0 ? '盈利' : '亏损'
 }
@@ -197,7 +212,7 @@ function ActiveWeightShape(props) {
         cx={cx}
         cy={cy}
         innerRadius={innerRadius}
-        outerRadius={outerRadius}
+        outerRadius={outerRadius + 6}
         startAngle={startAngle}
         endAngle={endAngle}
         fill={fill}
@@ -205,8 +220,8 @@ function ActiveWeightShape(props) {
       <Sector
         cx={cx}
         cy={cy}
-        innerRadius={outerRadius + 3}
-        outerRadius={outerRadius + 8}
+        innerRadius={outerRadius + 9}
+        outerRadius={outerRadius + 12}
         startAngle={startAngle}
         endAngle={endAngle}
         fill={fill}
@@ -218,6 +233,47 @@ function ActiveWeightShape(props) {
 
 export default function Dashboard({ plan, records, onNavigate }) {
   const [activeWeightIndex, setActiveWeightIndex] = useState(0)
+  const [quoteSnapshot, setQuoteSnapshot] = useState({
+    quotes: {},
+    asOf: '',
+    error: '',
+    loading: false,
+  })
+  const quoteKey = useMemo(
+    () => (plan?.assets || []).map((asset) => asset.ticker).filter(Boolean).join(','),
+    [plan],
+  )
+
+  const refreshMarketQuotes = useCallback(async (clearExisting = false) => {
+    const symbols = quoteKey ? quoteKey.split(',') : []
+    if (!symbols.length) {
+      return
+    }
+
+    setQuoteSnapshot((current) => ({
+      quotes: clearExisting ? {} : current.quotes,
+      asOf: clearExisting ? '' : current.asOf,
+      error: '',
+      loading: true,
+    }))
+
+    const result = await fetchMarketQuotes(symbols)
+    setQuoteSnapshot((current) => {
+      const previousQuotes = clearExisting ? {} : current.quotes
+      const hasFreshQuotes = Object.keys(result.quotes).length > 0
+
+      return {
+        quotes: hasFreshQuotes ? { ...previousQuotes, ...result.quotes } : previousQuotes,
+        asOf: result.asOf || current.asOf,
+        error: result.error,
+        loading: false,
+      }
+    })
+  }, [quoteKey])
+
+  useEffect(() => {
+    refreshMarketQuotes(true)
+  }, [refreshMarketQuotes])
 
   if (!plan) {
     return (
@@ -263,7 +319,15 @@ export default function Dashboard({ plan, records, onNavigate }) {
   const frequencyLabel = plan.frequency === 'biweekly' ? '双周' : '每月'
   const latestTagLabel = getTagLabel(latestRecord.tag)
   const latestPeriodAmount = Number(latestRecord.totalActualAmount) || 0
-  const latestPriceMap = Object.fromEntries(latestRecord.assets.map((asset) => [asset.ticker, Number(asset.price) || 0]))
+  const recordedPriceMap = Object.fromEntries(latestRecord.assets.map((asset) => [asset.ticker, Number(asset.price) || 0]))
+  const marketPriceMap = resolveMarketPrices(plan.assets, recordedPriceMap, quoteSnapshot.quotes)
+  const latestPriceMap = Object.fromEntries(Object.entries(marketPriceMap).map(([ticker, quote]) => [ticker, quote.price]))
+  const quoteDisplayState = getQuoteDisplayState({
+    loading: quoteSnapshot.loading,
+    error: quoteSnapshot.error,
+    asOf: quoteSnapshot.asOf,
+    quoteCount: Object.keys(quoteSnapshot.quotes).length,
+  })
   const marketValue = plan.assets.reduce(
     (sum, asset) => sum + (Number(asset.currentShares) || 0) * (latestPriceMap[asset.ticker] || 0),
     0,
@@ -329,8 +393,8 @@ export default function Dashboard({ plan, records, onNavigate }) {
       value,
       shares: Number(asset.currentShares) || 0,
       latestPrice: price,
+      latestPriceSource: marketPriceMap[asset.ticker]?.source || 'record',
       averageCost: averageCostInfo.averageCost,
-      hasKnownAverageCost: averageCostInfo.hasKnownCost,
       weightGap: Number((actualWeight - targetWeight).toFixed(2)),
       priceGapPct,
       color: PIE_COLORS[index % PIE_COLORS.length],
@@ -380,7 +444,7 @@ export default function Dashboard({ plan, records, onNavigate }) {
     {
       label: '当前总市值',
       value: formatMoney(marketValue),
-      meta: <>覆盖 <span className="data-subtle">{plan.assets.length}</span> 个标的，按最新价格估值。</>,
+      meta: <>覆盖 <span className="data-subtle">{plan.assets.length}</span> 个标的，按行情报价或执行日价格估值。</>,
       tone: 'text-white',
     },
     {
@@ -532,7 +596,21 @@ export default function Dashboard({ plan, records, onNavigate }) {
             <p className="label">Allocation Diagnostics</p>
             <h3 className="mt-3 text-[1.05rem] font-semibold tracking-[-0.02em] text-white">仓位诊断</h3>
           </div>
-          <span className="text-xs text-muted-foreground">Hover / Focus</span>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span className={quoteDisplayState.tone === 'fresh' ? 'text-positive' : quoteDisplayState.tone === 'stale' ? 'text-warning' : 'text-muted-foreground'}>
+              {quoteDisplayState.text}{quoteSnapshot.asOf && !quoteSnapshot.error ? ` ${formatQuoteTime(quoteSnapshot.asOf)}` : ''}
+            </span>
+            <button
+              type="button"
+              onClick={() => refreshMarketQuotes()}
+              className="control-button h-8 min-h-8 w-8 shrink-0 p-0"
+              aria-label="刷新市场报价"
+              title="刷新市场报价"
+              disabled={quoteSnapshot.loading}
+            >
+              <RefreshCcw size={14} className={quoteSnapshot.loading ? 'animate-spin' : ''} />
+            </button>
+          </div>
         </div>
 
         <div className="mt-5 grid min-w-0 gap-5 xl:grid-cols-[minmax(280px,0.58fr)_minmax(0,1.42fr)]">
@@ -553,6 +631,7 @@ export default function Dashboard({ plan, records, onNavigate }) {
                     paddingAngle={2}
                     activeIndex={safeActiveWeightIndex}
                     activeShape={ActiveWeightShape}
+                    animationDuration={180}
                     onMouseEnter={(_, index) => setActiveWeightIndex(index)}
                   >
                     {currentWeightData.map((entry) => (
@@ -633,13 +712,15 @@ export default function Dashboard({ plan, records, onNavigate }) {
                     <p className="data-value text-sm">{asset.name}</p>
                     <p className="mt-1 data-subtle text-xs">{asset.shares} 股</p>
                   </div>
-                  <div>
+                  <div className="dashboard-weight-value">
                     <p className="data-subtle text-sm">{asset.actualWeight}%</p>
-                    <p className="mt-1 text-xs text-muted-foreground">目标 <span className="data-subtle">{asset.targetWeight}%</span></p>
+                    <p className="dashboard-weight-target mt-1 text-xs text-muted-foreground">
+                      <span>目标</span>
+                      <span className="data-subtle">{asset.targetWeight}%</span>
+                    </p>
                   </div>
                   <div>
                     <p className="data-subtle text-sm">{formatOptionalMoney(asset.averageCost)}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">{asset.hasKnownAverageCost ? '成本已知' : '成本待补'}</p>
                   </div>
                   <div>
                     <p className="data-subtle text-sm">{formatMoneyPrecise(asset.latestPrice)}</p>

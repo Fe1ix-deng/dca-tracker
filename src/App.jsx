@@ -236,6 +236,16 @@ export default function App() {
   }
 
   const handleImportBackup = (payload) => {
+    // Import overwrites everything below, so first protect whatever is
+    // currently stored: auto-export it as a labeled safety snapshot the user
+    // can re-import if the incoming file turns out to be wrong or corrupt.
+    const hasExistingData = plans.length > 0 || records.length > 0
+    if (hasExistingData) {
+      downloadBackupJson(plan, plans, records, { label: 'pre-import' })
+    } else {
+      markBackedUp()
+    }
+
     const nextPlans = Array.isArray(payload?.plans)
       ? payload.plans
       : payload?.plan
@@ -249,9 +259,6 @@ export default function App() {
     if (nextActivePlanId) {
       setActivePlan(nextActivePlanId)
     }
-    // The data just loaded is, by definition, whatever the user had saved in
-    // that file, so treat the import itself as an up-to-date backup.
-    markBackedUp()
     setActiveTab(nextPlans.length ? 'history' : 'settings')
   }
 

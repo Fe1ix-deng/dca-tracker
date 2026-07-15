@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.2.0 - 2026-07-15
+
+### Added
+- Added live market quote refresh with execution-price fallback across dashboard and operation workflows.
+- Added safer full-plan backup exports, pre-import safety snapshots, and crash-rescue exports.
+
+### Changed
+- Highlight the matching allocation pie segment when hovering or focusing a ticker, with a short expansion animation.
+- Expanded dashboard layout coverage and added regression tests for quotes, yield estimation, and DCA calculations.
+
+### Fixed
+- Corrected yield-estimate rounding at 5% allocation steps and limited open-ended VA target calculations to reachable periods.
+
 ## 2.1.0 - 2026-07-11
 
 ### Changed

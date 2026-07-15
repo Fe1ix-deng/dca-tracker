@@ -127,7 +127,6 @@ html {
 
 body {
   margin: 0;
-  min-width: 320px;
   min-height: 100%;
   height: 100%;
   overflow: hidden;
@@ -959,6 +958,28 @@ textarea:focus-visible {
   .dashboard-metric-card .data-subtle,
   .dashboard-metric-card .data-value {
     vertical-align: baseline;
+  }
+
+  .dashboard-weight-value {
+    display: grid;
+    gap: 0.25rem;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .dashboard-weight-value > .data-subtle {
+    grid-column: 2;
+    text-align: right;
+  }
+
+  .dashboard-weight-target {
+    display: grid;
+    gap: 0.5rem;
+    grid-column: 1 / -1;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .dashboard-weight-target .data-subtle {
+    text-align: right;
   }
 
   .dashboard-trajectory-plot {

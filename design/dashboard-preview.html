@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>dca-tracker × Linear 风格预览</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary: #5e6ad2;
+    --primary-hover: #828fff;
+    --ink: #f7f8f8;
+    --ink-muted: #d0d6e0;
+    --ink-subtle: #8a8f98;
+    --ink-tertiary: #62666d;
+    --canvas: #010102;
+    --surface-1: #0f1011;
+    --surface-2: #141516;
+    --hairline: #23252a;
+    --hairline-strong: #34343a;
+    --success: #27a644;
+    --negative: #e5484d;
+    --warning: #d4a72c;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--canvas);
+    color: var(--ink);
+    font-family: "Inter", -apple-system, "SF Pro Display", system-ui, sans-serif;
+    padding: 48px 24px 80px;
+  }
+  .note {
+    max-width: 860px;
+    margin: 0 auto 28px;
+    padding: 14px 18px;
+    background: var(--surface-1);
+    border: 1px solid var(--hairline);
+    border-radius: 10px;
+    color: var(--ink-subtle);
+    font-size: 12.5px;
+    line-height: 1.6;
+  }
+  .note b { color: var(--ink-muted); font-weight: 600; }
+  .shell {
+    max-width: 860px;
+    margin: 0 auto;
+  }
+  .kicker {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-subtle);
+    margin: 0 0 10px;
+  }
+  h1 {
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    margin: 0;
+  }
+  .sub {
+    color: var(--ink-subtle);
+    font-size: 14px;
+    max-width: 520px;
+    margin: 10px 0 0;
+    line-height: 1.6;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-top: 28px;
+  }
+  @media (max-width: 720px) {
+    .grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  .card {
+    background: var(--surface-1);
+    border: 1px solid var(--hairline);
+    border-radius: 10px;
+    padding: 18px;
+  }
+  .card .cap {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: var(--ink-subtle);
+    margin: 0 0 10px;
+  }
+  .card .val {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 21px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+  .card .meta {
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--ink-tertiary);
+    line-height: 1.5;
+  }
+  .up { color: var(--success); }
+  .down { color: var(--negative); }
+  .panel {
+    margin-top: 14px;
+    background: var(--surface-1);
+    border: 1px solid var(--hairline);
+    border-radius: 10px;
+    padding: 22px;
+  }
+  .panel-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 18px;
+  }
+  .panel-head h3 {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 0;
+  }
+  .legend {
+    display: flex;
+    gap: 16px;
+    font-size: 12px;
+    color: var(--ink-subtle);
+  }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .dot { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 7px;
+    padding: 9px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .btn:hover { background: var(--primary-hover); }
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid var(--hairline-strong);
+    color: var(--ink-muted);
+  }
+  .btn-ghost:hover { border-color: var(--primary); color: var(--ink); background: transparent; }
+  .row-actions { display: flex; gap: 10px; margin-top: 24px; }
+  .allocation {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 6px;
+  }
+  .chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface-2);
+    border: 1px solid var(--hairline);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 12.5px;
+    color: var(--ink-muted);
+  }
+  .chip .tag { font-family: "IBM Plex Mono", monospace; color: var(--ink); font-weight: 600; }
+</style>
+</head>
+<body>
+
+  <div class="note">
+    这是一个静态预览，用的是 <b>Linear</b> 官方文档提炼出的设计 token（画布 #010102、主强调色 #5e6ad2、卡片面板 #0f1011 + 发丝级描边），套在你 Dashboard 的真实文案和数据结构上。数字部分保留了 IBM Plex Mono —— 这是财务类界面的通用最佳实践（Stripe 自己的规范也是这么写的），跟具体品牌风格无关，值得单独保留。
+  </div>
+
+  <div class="shell">
+    <p class="kicker">Overview</p>
+    <h1>标普 + 纳指双核定投</h1>
+    <p class="sub">跟踪当前持仓、市值投入差额，以及下一期执行前需要看的预算和仓位信号。</p>
+
+    <div class="grid">
+      <div class="card">
+        <p class="cap">当前总市值</p>
+        <p class="val">$128,460</p>
+        <p class="meta">覆盖 <span style="color:var(--ink-muted)">3</span> 个标的，按最新价格估值。</p>
+      </div>
+      <div class="card">
+        <p class="cap">累计总投入</p>
+        <p class="val">$96,000</p>
+        <p class="meta">累计写入 <span style="color:var(--ink-muted)">24</span> 条执行记录。</p>
+      </div>
+      <div class="card">
+        <p class="cap">浮动盈亏</p>
+        <p class="val up">+$32,460</p>
+        <p class="meta">盈利 <span class="up">+33.81%</span>，当前仓位对累计投入的偏离。</p>
+      </div>
+      <div class="card">
+        <p class="cap">剩余可投</p>
+        <p class="val">$4,000</p>
+        <p class="meta">本期预算按节奏正常释放中。</p>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h3>资产表现</h3>
+        <div class="legend">
+          <span><i class="dot" style="background:var(--primary)"></i>组合市值</span>
+          <span><i class="dot" style="background:var(--ink-tertiary)"></i>累计投入</span>
+        </div>
+      </div>
+      <svg viewBox="0 0 760 200" width="100%" height="200" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="fillGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#5e6ad2" stop-opacity="0.35"/>
+            <stop offset="100%" stop-color="#5e6ad2" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <line x1="0" y1="170" x2="760" y2="170" stroke="#23252a" stroke-width="1"/>
+        <line x1="0" y1="110" x2="760" y2="110" stroke="#23252a" stroke-width="1"/>
+        <line x1="0" y1="50" x2="760" y2="50" stroke="#23252a" stroke-width="1"/>
+        <path d="M0,175 C120,168 200,150 300,140 C420,128 500,100 600,70 C680,48 720,40 760,20 L760,200 L0,200 Z" fill="url(#fillGrad)"/>
+        <path d="M0,175 C120,168 200,150 300,140 C420,128 500,100 600,70 C680,48 720,40 760,20" fill="none" stroke="#5e6ad2" stroke-width="2"/>
+        <path d="M0,180 C150,175 300,165 450,150 C570,138 660,128 760,118" fill="none" stroke="#62666d" stroke-width="1.6" stroke-dasharray="4 4"/>
+      </svg>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h3>仓位诊断</h3>
+      </div>
+      <div class="allocation">
+        <div class="chip"><i class="dot" style="background:#5e6ad2"></i>VOO <span class="tag">60%</span></div>
+        <div class="chip"><i class="dot" style="background:#27a644"></i>QQQ <span class="tag">30%</span></div>
+        <div class="chip"><i class="dot" style="background:#d4a72c"></i>SCHD <span class="tag">10%</span></div>
+      </div>
+      <div class="row-actions">
+        <button class="btn">记录本期操作</button>
+        <button class="btn btn-ghost">查看历史</button>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
