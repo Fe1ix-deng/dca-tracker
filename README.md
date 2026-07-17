@@ -65,7 +65,7 @@ npm install && npm run dev
 1. 将项目 Push 到 GitHub
 2. 在 [Vercel](https://vercel.com) 导入该仓库
 3. Framework 选择 `Vite`
-4. 在 Vercel 的 `Environment Variables` 中添加：`VITE_TWELVE_DATA_KEY`
+4. 在 Vercel 的 `Environment Variables` 中添加：`TWELVE_DATA_API_KEY`
 5. 保持默认设置，一键部署
 
 > 项目根目录已包含 `vercel.json`，确保单页应用路由正常重写到 `index.html`。
@@ -77,11 +77,11 @@ npm install && npm run dev
 在项目根目录创建 `.env`：
 
 ```
-VITE_TWELVE_DATA_KEY=your_twelve_data_key
+TWELVE_DATA_API_KEY=your_twelve_data_key
 ```
 
 - API Key 从 [Twelve Data](https://twelvedata.com/) 免费获取
-- 如果不配置，价格自动获取将不可用，但手动输入功能完全正常
+- 如果不配置，价格自动获取将不可用，但手动输入功能完全正常。旧部署使用的 `VITE_TWELVE_DATA_KEY` 会暂时兼容；请迁移到 `TWELVE_DATA_API_KEY`，避免将密钥注入前端构建产物。
 - 请勿将 `.env` 提交到 GitHub
 
 ---

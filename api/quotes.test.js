@@ -22,9 +22,20 @@ function createResponse() {
 
 describe('quotes API', () => {
   const originalApiKey = process.env.TWELVE_DATA_API_KEY
+  const originalLegacyApiKey = process.env.VITE_TWELVE_DATA_KEY
 
   afterEach(() => {
-    process.env.TWELVE_DATA_API_KEY = originalApiKey
+    if (originalApiKey === undefined) {
+      delete process.env.TWELVE_DATA_API_KEY
+    } else {
+      process.env.TWELVE_DATA_API_KEY = originalApiKey
+    }
+
+    if (originalLegacyApiKey === undefined) {
+      delete process.env.VITE_TWELVE_DATA_KEY
+    } else {
+      process.env.VITE_TWELVE_DATA_KEY = originalLegacyApiKey
+    }
     clearQuoteCache()
     vi.restoreAllMocks()
   })
@@ -55,6 +66,7 @@ describe('quotes API', () => {
 
   it('returns a configuration error without calling the provider', async () => {
     delete process.env.TWELVE_DATA_API_KEY
+    delete process.env.VITE_TWELVE_DATA_KEY
     const fetchSpy = vi.spyOn(globalThis, 'fetch')
     const response = createResponse()
 
@@ -63,5 +75,20 @@ describe('quotes API', () => {
     expect(response.statusCode).toBe(503)
     expect(response.body).toEqual({ error: '行情服务未配置。' })
     expect(fetchSpy).not.toHaveBeenCalled()
+  })
+
+  it('uses the legacy Vite variable so existing deployments keep fetching quotes', async () => {
+    delete process.env.TWELVE_DATA_API_KEY
+    process.env.VITE_TWELVE_DATA_KEY = 'legacy-key'
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      json: async () => ({ price: '92.19' }),
+    })
+    const response = createResponse()
+
+    await handler({ method: 'GET', query: { symbols: 'QLD' } }, response)
+
+    expect(response.statusCode).toBe(200)
+    expect(response.body.quotes).toEqual({ QLD: { price: 92.19 } })
+    expect(fetchSpy).toHaveBeenCalledWith(expect.stringContaining('apikey=legacy-key'))
   })
 })

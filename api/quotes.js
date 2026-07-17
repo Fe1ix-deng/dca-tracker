@@ -53,7 +53,9 @@ export default async function handler(request, response) {
     return response.status(405).json({ error: '只支持 GET 请求。' })
   }
 
-  const apiKey = process.env.TWELVE_DATA_API_KEY
+  // Keep existing Vercel deployments working while they migrate to the
+  // server-only variable documented in .env.example.
+  const apiKey = process.env.TWELVE_DATA_API_KEY || process.env.VITE_TWELVE_DATA_KEY
   if (!apiKey) {
     return response.status(503).json({ error: '行情服务未配置。' })
   }
