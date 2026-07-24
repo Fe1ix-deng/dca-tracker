@@ -771,9 +771,10 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData 
               )}
             </div>
 
-            <div className={`mt-4 rounded-md border px-4 py-3 text-sm ${isWeightValid ? 'border-positive/30 bg-positive/10 text-positive' : 'border-warning/30 bg-warning/10 text-warning'}`}>
-              当前总权重：<span className="data-value">{Math.round(totalWeight * 100)}%</span>
-              {!isWeightValid ? '，请调整到 100% 后才能保存。' : '，可以保存当前计划。'}
+            <div className={`settings-weight-status mt-4 rounded-md border px-4 py-3 ${isWeightValid ? 'border-positive/30 bg-positive/10 text-positive' : 'border-warning/30 bg-warning/10 text-warning'}`}>
+              <span>当前总权重：</span>
+              <span className="data-value">{Math.round(totalWeight * 100)}%</span>
+              <span>{!isWeightValid ? '，请调整到 100% 后才能保存。' : '，可以保存当前计划。'}</span>
             </div>
           </div>
         </div>

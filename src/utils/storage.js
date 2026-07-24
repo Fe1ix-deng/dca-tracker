@@ -5,10 +5,19 @@ const STORAGE_KEYS = {
   records: 'dca-tracker:records',
   lastBackupAt: 'dca-tracker:last-backup-at',
   lastDataChangeAt: 'dca-tracker:last-data-change-at',
+  lastReadReleaseVersion: 'dca-tracker:last-read-release-version',
 }
 
 function canUseStorage() {
-  return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined'
+  if (typeof window === 'undefined') {
+    return false
+  }
+
+  try {
+    return typeof window.localStorage !== 'undefined'
+  } catch (error) {
+    return false
+  }
 }
 
 function readStorage(key, fallback) {
@@ -37,6 +46,21 @@ function writeStorage(key, value) {
   }
 }
 
+export function normalizeRecords(records) {
+  if (!Array.isArray(records)) {
+    return []
+  }
+
+  return records
+    .filter((record) => record && typeof record === 'object')
+    .map((record) => ({
+      ...record,
+      assets: Array.isArray(record.assets)
+        ? record.assets.filter((asset) => asset && typeof asset === 'object')
+        : [],
+    }))
+}
+
 export function savePlan(plan) {
   writeStorage(STORAGE_KEYS.plan, plan)
 }
@@ -62,11 +86,11 @@ export function loadActivePlanId() {
 }
 
 export function saveRecords(records) {
-  writeStorage(STORAGE_KEYS.records, Array.isArray(records) ? records : [])
+  writeStorage(STORAGE_KEYS.records, normalizeRecords(records))
 }
 
 export function loadRecords() {
-  return readStorage(STORAGE_KEYS.records, [])
+  return normalizeRecords(readStorage(STORAGE_KEYS.records, []))
 }
 
 export function saveLastBackupAt(timestamp) {
@@ -83,6 +107,14 @@ export function saveLastDataChangeAt(timestamp) {
 
 export function loadLastDataChangeAt() {
   return readStorage(STORAGE_KEYS.lastDataChangeAt, null)
+}
+
+export function saveLastReadReleaseVersion(version) {
+  writeStorage(STORAGE_KEYS.lastReadReleaseVersion, version || null)
+}
+
+export function loadLastReadReleaseVersion() {
+  return readStorage(STORAGE_KEYS.lastReadReleaseVersion, null)
 }
 
 // Call whenever the user completes a full JSON backup export or import.
@@ -125,6 +157,7 @@ export function clearAll() {
     window.localStorage.removeItem(STORAGE_KEYS.records)
     window.localStorage.removeItem(STORAGE_KEYS.lastBackupAt)
     window.localStorage.removeItem(STORAGE_KEYS.lastDataChangeAt)
+    window.localStorage.removeItem(STORAGE_KEYS.lastReadReleaseVersion)
   } catch (error) {
     console.error('Failed to clear storage', error)
   }

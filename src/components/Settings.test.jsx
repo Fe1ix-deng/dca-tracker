@@ -3,6 +3,12 @@ import { describe, expect, it } from 'vitest'
 import { getSavedReserveRatio } from './Settings'
 
 describe('Settings helpers', () => {
+  it('aligns the asset-weight status text and value on a shared baseline', () => {
+    const stylesheet = readFileSync(new URL('../index.css', import.meta.url), 'utf8')
+
+    expect(stylesheet).toMatch(/\.settings-weight-status\s*\{[\s\S]*?items-baseline/)
+  })
+
   it('does not force narrow settings layouts to a 320px minimum width', () => {
     const stylesheet = readFileSync(new URL('../index.css', import.meta.url), 'utf8')
     const bodyRule = stylesheet.match(/body\s*\{([\s\S]*?)\n\}/)?.[1] ?? ''

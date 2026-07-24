@@ -15,19 +15,26 @@ export async function fetchQuote(ticker) {
     }
   }
 
-  const result = await fetchMarketQuotes([symbol])
-  const roundedPrice = roundQuotePrice(result.quotes?.[symbol]?.price)
+  try {
+    const result = await fetchMarketQuotes([symbol])
+    const roundedPrice = roundQuotePrice(result.quotes?.[symbol]?.price)
 
-  if (roundedPrice === null) {
+    if (roundedPrice === null) {
+      return {
+        price: null,
+        error: result.error || '获取失败，请手动输入。',
+      }
+    }
+
+    return {
+      price: roundedPrice,
+      error: '',
+    }
+  } catch {
     return {
       price: null,
-      error: result.error || '获取失败，请手动输入。',
+      error: '网络异常，无法获取最新行情。',
     }
-  }
-
-  return {
-    price: roundedPrice,
-    error: '',
   }
 }
 

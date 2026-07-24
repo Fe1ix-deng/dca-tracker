@@ -18,6 +18,7 @@ import { getDeployableBudget, getRemainingDeployableBudget } from '../utils/budg
 import { calculateAverageCost, calculatePriceGapPct } from '../utils/portfolioCost'
 import { fetchMarketQuotes } from '../services/marketQuotes'
 import { getQuoteDisplayState, resolveMarketPrices } from '../utils/marketSnapshot'
+import ReleaseNotice from './ReleaseNotice'
 
 const PIE_COLORS = [
   'rgb(var(--color-accent-rgb))',
@@ -277,7 +278,10 @@ export default function Dashboard({ plan, records, onNavigate }) {
 
   if (!plan) {
     return (
-      <section className="empty-state text-textSoft">
+      <section className="empty-state relative text-textSoft">
+        <div className="absolute right-4 top-4">
+          <ReleaseNotice />
+        </div>
         <p className="label">Overview</p>
         <h2 className="empty-state-title">还没有计划</h2>
         <p className="body-copy mx-auto mt-3 max-w-xl">先去设置页创建你的第一份定投计划，总览页会在这里呈现资产表现和预算状态。</p>
@@ -296,7 +300,10 @@ export default function Dashboard({ plan, records, onNavigate }) {
 
   if (!planRecords.length) {
     return (
-      <section className="empty-state">
+      <section className="empty-state relative">
+        <div className="absolute right-4 top-4">
+          <ReleaseNotice />
+        </div>
         <p className="label">Overview</p>
         <h2 className="empty-state-title">还没有操作记录</h2>
         <p className="body-copy mx-auto mt-3 max-w-2xl">
@@ -480,6 +487,7 @@ export default function Dashboard({ plan, records, onNavigate }) {
                 <h2 className="mt-3 text-[1.55rem] font-semibold tracking-[-0.035em] text-white">{plan.name || '当前计划'}</h2>
                 <p className="body-copy mt-3 max-w-2xl">跟踪当前持仓、市值投入差额，以及下一期执行前需要看的预算和仓位信号。</p>
               </div>
+              <ReleaseNotice />
             </div>
 
             <div className="dashboard-overview-matrix">

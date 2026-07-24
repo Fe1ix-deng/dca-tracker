@@ -25,4 +25,14 @@ describe('dashboard weight cells', () => {
     expect(dashboardSource).toMatch(/onMouseEnter=\{\(\) => setActiveWeightIndex\(index\)\}/)
     expect(dashboardSource).toMatch(/onFocus=\{\(\) => setActiveWeightIndex\(index\)\}/)
   })
+
+  it('places the release notice in the overview card header', () => {
+    expect(dashboardSource).toContain("import ReleaseNotice from './ReleaseNotice'")
+    expect(dashboardSource).toMatch(/<header className="card dashboard-overview-card p-5">[\s\S]*?<ReleaseNotice \/>/)
+  })
+
+  it('keeps the release notice available before a plan or record exists', () => {
+    expect(dashboardSource).toMatch(/if \(!plan\) \{[\s\S]*?<ReleaseNotice \/>[\s\S]*?还没有计划/)
+    expect(dashboardSource).toMatch(/if \(!planRecords\.length\) \{[\s\S]*?<ReleaseNotice \/>[\s\S]*?还没有操作记录/)
+  })
 })

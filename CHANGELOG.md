@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.3.0 - 2026-07-24
+
+### Added
+- Added a dashboard release notice that presents the latest version and user-facing update summary.
+
+### Changed
+- Acknowledged release notices now contract into a persistent bell for later review and reappear automatically when a new version is released.
+
 ## 2.2.0 - 2026-07-15
 
 ### Added

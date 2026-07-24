@@ -35,6 +35,9 @@ function normalizePlan(plan) {
   return {
     ...createEmptyPlan(),
     ...plan,
+    assets: Array.isArray(plan.assets)
+      ? plan.assets.filter((asset) => asset && typeof asset === 'object')
+      : [],
     budgetMode,
     reserveRatio: budgetMode === 'open-ended' ? 0 : clampReserveRatio(plan.reserveRatio),
     periodicTarget: Number(plan.periodicTarget) || 0,

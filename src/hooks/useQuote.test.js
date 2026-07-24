@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import * as marketQuotes from '../services/marketQuotes'
 import { fetchQuote } from './useQuote'
 
 describe('fetchQuote', () => {
@@ -19,5 +20,14 @@ describe('fetchQuote', () => {
       error: '',
     })
     expect(fetchSpy).toHaveBeenCalledWith('/api/quotes?symbols=QLD')
+  })
+
+  it('returns a manual-entry error when the quote service rejects unexpectedly', async () => {
+    vi.spyOn(marketQuotes, 'fetchMarketQuotes').mockRejectedValue(new Error('service unavailable'))
+
+    await expect(fetchQuote('QLD')).resolves.toEqual({
+      price: null,
+      error: '网络异常，无法获取最新行情。',
+    })
   })
 })
