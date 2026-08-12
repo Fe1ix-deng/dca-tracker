@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   BarChart3,
+  Check,
+  ChevronDown,
   Download,
   History as HistoryIcon,
   Moon,
@@ -9,12 +11,21 @@ import {
   TriangleAlert,
   WalletCards,
 } from 'lucide-react'
+import ReleaseNotice from './ReleaseNotice'
 
 const navItems = [
   { key: 'dashboard', label: '总览', title: 'Dashboard', icon: BarChart3 },
   { key: 'operation', label: '本期操作', title: 'Operation', icon: WalletCards },
   { key: 'history', label: '历史', title: 'History', icon: HistoryIcon },
   { key: 'settings', label: '设置', title: 'Settings', icon: SettingsIcon },
+]
+
+const accentOptions = [
+  { id: 'indigo', label: '经典靛蓝', color: '#5e6ad2' },
+  { id: 'amber', label: 'Claude 陶土琥珀', color: '#c6613f' },
+  { id: 'green', label: '资产绿', color: '#3ca374' },
+  { id: 'rose', label: '柔玫红', color: '#d46b86' },
+  { id: 'mono', label: '黑白灰', color: '#a5a8b2' },
 ]
 
 function PlanSelector({ plans, activePlanId, onChangeActivePlan, compact = false }) {
@@ -46,22 +57,116 @@ function PlanSelector({ plans, activePlanId, onChangeActivePlan, compact = false
   )
 }
 
-function ThemeButton({ theme, onToggleTheme, compact = false }) {
+function ThemeControl({ theme, accent = 'indigo', onToggleTheme, onChangeAccent, compact = false }) {
   const isDark = theme === 'dark'
   const Icon = isDark ? Moon : SunMedium
   const nextThemeLabel = isDark ? '切换到日间主题' : '切换到夜间主题'
+  const [isAccentMenuOpen, setIsAccentMenuOpen] = useState(false)
+  const wrapperRef = useRef(null)
+  const arrowRef = useRef(null)
+  const firstAccentOptionRef = useRef(null)
+  const focusFirstOnOpenRef = useRef(false)
+
+  const closeAccentMenu = () => setIsAccentMenuOpen(false)
+
+  const handleAccentKeyDown = (event) => {
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      closeAccentMenu()
+      arrowRef.current?.focus()
+      return
+    }
+
+    if (event.key === 'ArrowDown' && !isAccentMenuOpen) {
+      event.preventDefault()
+      focusFirstOnOpenRef.current = true
+      setIsAccentMenuOpen(true)
+    }
+  }
+
+  const handleDocumentPointerDown = (event) => {
+    if (!wrapperRef.current?.contains(event.target)) {
+      closeAccentMenu()
+    }
+  }
+
+  useEffect(() => {
+    if (!isAccentMenuOpen) return undefined
+
+    document.addEventListener('pointerdown', handleDocumentPointerDown)
+    return () => document.removeEventListener('pointerdown', handleDocumentPointerDown)
+  }, [isAccentMenuOpen])
+
+  useEffect(() => {
+    if (isAccentMenuOpen && focusFirstOnOpenRef.current) {
+      focusFirstOnOpenRef.current = false
+      firstAccentOptionRef.current?.focus()
+    }
+  }, [isAccentMenuOpen])
 
   return (
-    <button
-      type="button"
-      aria-label={nextThemeLabel}
-      title={nextThemeLabel}
-      onClick={onToggleTheme}
-      className={compact ? 'theme-toggle theme-toggle-compact' : 'theme-toggle'}
+    <div
+      ref={wrapperRef}
+      className="theme-control relative min-w-0"
+      onKeyDown={handleAccentKeyDown}
     >
-      <Icon size={17} aria-hidden="true" />
-      <span>{isDark ? '夜间' : '日间'}</span>
-    </button>
+      <div className="theme-control-actions flex min-h-11 items-stretch gap-1">
+        <button
+          type="button"
+          aria-label={nextThemeLabel}
+          title={nextThemeLabel}
+          onClick={onToggleTheme}
+          className={compact ? 'theme-toggle theme-toggle-compact' : 'theme-toggle'}
+        >
+          <Icon size={17} aria-hidden="true" />
+          <span>{isDark ? '夜间' : '日间'}</span>
+        </button>
+        <button
+          ref={arrowRef}
+          type="button"
+          aria-haspopup="menu"
+          aria-expanded={isAccentMenuOpen}
+          aria-label="选择强调色"
+          title="选择强调色"
+          onClick={() => setIsAccentMenuOpen((isOpen) => !isOpen)}
+          className={compact
+            ? 'theme-arrow theme-arrow-compact inline-flex h-10 min-h-10 w-8 shrink-0 items-center justify-center rounded-lg border border-line/[0.08] bg-white/[0.025] text-white transition hover:border-accent/25 hover:bg-accent/10'
+            : 'theme-arrow inline-flex min-h-[2.75rem] w-9 shrink-0 items-center justify-center rounded-lg border border-line/[0.08] bg-white/[0.025] text-white transition hover:border-accent/25 hover:bg-accent/10'}
+        >
+          <ChevronDown size={15} aria-hidden="true" />
+        </button>
+      </div>
+      {isAccentMenuOpen && (
+        <div
+          className="theme-accent-menu absolute right-0 top-full z-50 mt-2 grid min-w-48 gap-1 rounded-lg border border-line/[0.12] bg-panel p-1.5 shadow-2xl"
+          role="menu"
+          aria-label="强调色"
+        >
+          {accentOptions.map((option, index) => (
+            <button
+              key={option.id}
+              ref={index === 0 ? firstAccentOptionRef : undefined}
+              type="button"
+              role="menuitemradio"
+              aria-checked={accent === option.id}
+              onClick={() => {
+                onChangeAccent?.(option.id)
+                closeAccentMenu()
+              }}
+              className="theme-accent-option flex min-h-10 items-center gap-2 rounded-md px-2.5 text-left text-xs text-textSoft transition hover:bg-white/[0.06] hover:text-white"
+            >
+              <span
+                className="theme-accent-swatch h-3.5 w-3.5 shrink-0 rounded-full border border-white/20"
+                aria-hidden="true"
+                style={{ backgroundColor: option.color }}
+              />
+              <span>{option.label}</span>
+              {accent === option.id && <Check size={15} aria-hidden="true" />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -118,6 +223,8 @@ export default function Layout({
   onChangeActivePlan,
   theme = 'dark',
   onToggleTheme,
+  accent = 'indigo',
+  onChangeAccent,
   backupStatus = null,
   onExportBackup,
 }) {
@@ -158,7 +265,12 @@ export default function Layout({
             activePlanId={activePlanId}
             onChangeActivePlan={onChangeActivePlan}
           />
-          <ThemeButton theme={theme} onToggleTheme={onToggleTheme} />
+          <ThemeControl
+            theme={theme}
+            accent={accent}
+            onToggleTheme={onToggleTheme}
+            onChangeAccent={onChangeAccent}
+          />
         </div>
       </aside>
 
@@ -174,8 +286,21 @@ export default function Layout({
             onChangeActivePlan={onChangeActivePlan}
             compact
           />
-          <ThemeButton theme={theme} onToggleTheme={onToggleTheme} compact />
+          <ThemeControl
+            theme={theme}
+            accent={accent}
+            onToggleTheme={onToggleTheme}
+            onChangeAccent={onChangeAccent}
+            compact
+          />
+          <div className="mobile-release-notice">
+            <ReleaseNotice />
+          </div>
         </div>
+      </div>
+
+      <div className="app-toolbar desktop-release-notice">
+        <ReleaseNotice />
       </div>
 
       <div className="app-scroll-area">

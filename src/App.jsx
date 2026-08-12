@@ -230,7 +230,7 @@ function rebuildStateAfterRecordEdit(plan, records, updatedRecord) {
 export default function App() {
   const { plan, plans, activePlanId, setActivePlan, replacePlan, resetPlan } = usePlan()
   const { records, addRecord, replaceRecords } = useRecords()
-  const { theme, toggleTheme } = useTheme()
+  const { accent, setAccent, theme, toggleTheme } = useTheme()
   const [activeTab, setActiveTab] = useState('dashboard')
   const [backupPing, setBackupPing] = useState(0)
 
@@ -318,6 +318,8 @@ export default function App() {
       onChangeActivePlan={setActivePlan}
       theme={theme}
       onToggleTheme={toggleTheme}
+      accent={accent}
+      onChangeAccent={setAccent}
       backupStatus={backupStatus}
       onExportBackup={handleExportBackup}
     >
