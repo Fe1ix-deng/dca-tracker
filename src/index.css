@@ -641,6 +641,12 @@ textarea:focus-visible {
     @apply inline-flex min-h-[2.75rem] items-center justify-center gap-2 rounded-lg border border-line/[0.08] bg-white/[0.025] px-3 text-sm font-medium text-white transition;
   }
 
+  .theme-control .theme-toggle {
+    border-color: rgb(var(--color-line-rgb) / 0.08);
+    background: rgb(var(--color-panel-rgb) / 0.72);
+    color: rgb(var(--color-text-rgb));
+  }
+
   .theme-toggle:hover {
     @apply border-accent/25 bg-accent/10;
   }
@@ -706,10 +712,15 @@ textarea:focus-visible {
   }
 
   .theme-accent-option:hover,
-  .theme-accent-option:focus-visible,
-  .theme-accent-option[aria-checked='true'] {
+  .theme-accent-option:focus-visible {
     border-color: rgb(var(--color-accent-rgb) / 0.2);
     background: rgb(var(--color-accent-rgb) / 0.1);
+    color: rgb(var(--color-text-rgb));
+  }
+
+  .theme-accent-option[aria-checked='true'] {
+    border-color: transparent;
+    background: rgb(var(--color-accent-rgb) / 0.12);
     color: rgb(var(--color-text-rgb));
   }
 

@@ -16,4 +16,16 @@ describe('accent theme tokens', () => {
     expect(stylesSource).toContain('250 250 247')
     expect(stylesSource).toContain('221 221 218')
   })
+
+  it('keeps the theme toggle readable across both color schemes', () => {
+    expect(stylesSource).toContain('.theme-control .theme-toggle {')
+    expect(stylesSource).toContain('color: rgb(var(--color-text-rgb));')
+    expect(stylesSource).toContain('background: rgb(var(--color-panel-rgb) / 0.72);')
+  })
+
+  it('gives selected accent options a distinct borderless state', () => {
+    expect(stylesSource).toContain(".theme-accent-option[aria-checked='true'] {")
+    expect(stylesSource).toContain('background: rgb(var(--color-accent-rgb) / 0.12);')
+    expect(stylesSource).toContain('border-color: transparent;')
+  })
 })

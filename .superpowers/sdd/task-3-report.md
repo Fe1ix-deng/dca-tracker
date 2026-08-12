@@ -32,3 +32,10 @@ Review-fix verification (2026-08-12):
 - Removed the conflicting JSX `flex` utility from the `.theme-control-actions` wrapper so its component CSS grid applies directly.
 - `npx vitest run src/theme.tokens.test.js src/components/Layout.theme.test.js src/hooks/useTheme.test.js`: 3 files, 9 tests passed.
 - `npm run build`: passed (`vite build`, 1691 modules transformed).
+
+Final review fixes (2026-08-12):
+- Added a scoped `.theme-control .theme-toggle` tokenized rule so the main theme button uses `--color-text-rgb`, `--color-panel-rgb`, and `--color-line-rgb` in both light and dark modes while preserving compact dimensions.
+- Split selected accent options from hover/focus: selected options use a borderless 12% accent background; hover/focus use a 10% accent background with an accent border.
+- `npx vitest run src/theme.tokens.test.js src/components/Layout.theme.test.js src/hooks/useTheme.test.js`: 3 files, 11 tests passed.
+- `npm test`: 24 files, 103 tests passed.
+- `npm run build`: passed (`vite build`, 1691 modules transformed).
