@@ -654,10 +654,10 @@ textarea:focus-visible {
   .theme-accent-menu {
     position: absolute;
     right: 0;
-    top: calc(100% + 0.5rem);
+    bottom: calc(100% + .5rem);
     z-index: 50;
     display: grid;
-    min-width: 13rem;
+    width: min(15rem, calc(100vw - 1.5rem));
     gap: 0.25rem;
     padding: 0.4rem;
     border: 1px solid rgb(var(--color-line-rgb) / 0.18);
@@ -731,7 +731,7 @@ textarea:focus-visible {
   }
 
   .theme-toggle-compact {
-    @apply h-10 min-h-10 w-10 shrink-0 p-0;
+    @apply h-11 min-h-11 w-11 shrink-0 p-0;
   }
 
   .theme-toggle-compact span {

@@ -130,15 +130,15 @@ function ThemeControl({ theme, accent = 'indigo', onToggleTheme, onChangeAccent,
           title="选择强调色"
           onClick={() => setIsAccentMenuOpen((isOpen) => !isOpen)}
           className={compact
-            ? 'theme-arrow theme-arrow-compact inline-flex h-10 min-h-10 w-8 shrink-0 items-center justify-center rounded-lg border border-line/[0.08] bg-white/[0.025] text-white transition hover:border-accent/25 hover:bg-accent/10'
-            : 'theme-arrow inline-flex min-h-[2.75rem] w-9 shrink-0 items-center justify-center rounded-lg border border-line/[0.08] bg-white/[0.025] text-white transition hover:border-accent/25 hover:bg-accent/10'}
+            ? 'theme-arrow theme-arrow-compact'
+            : 'theme-arrow'}
         >
           <ChevronDown size={15} aria-hidden="true" />
         </button>
       </div>
       {isAccentMenuOpen && (
         <div
-          className="theme-accent-menu absolute right-0 top-full z-50 mt-2 grid min-w-48 gap-1 rounded-lg border border-line/[0.12] bg-panel p-1.5 shadow-2xl"
+          className="theme-accent-menu"
           role="menu"
           aria-label="强调色"
         >
@@ -153,10 +153,10 @@ function ThemeControl({ theme, accent = 'indigo', onToggleTheme, onChangeAccent,
                 onChangeAccent?.(option.id)
                 closeAccentMenu()
               }}
-              className="theme-accent-option flex min-h-10 items-center gap-2 rounded-md px-2.5 text-left text-xs text-textSoft transition hover:bg-white/[0.06] hover:text-white"
+              className="theme-accent-option"
             >
               <span
-                className="theme-accent-swatch h-3.5 w-3.5 shrink-0 rounded-full border border-white/20"
+                className="theme-accent-swatch"
                 aria-hidden="true"
                 style={{ backgroundColor: option.color }}
               />
