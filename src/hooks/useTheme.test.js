@@ -29,4 +29,27 @@ describe('accent preference', () => {
     window.localStorage.setItem('dca-tracker:accent', 'electric-purple')
     expect(resolveAccentState()).toEqual({ accent: 'indigo', userPreference: null })
   })
+
+  it('treats a throwing localStorage getter as unavailable', () => {
+    Object.defineProperty(window, 'localStorage', {
+      configurable: true,
+      get() {
+        throw new Error('storage access denied')
+      },
+    })
+
+    try {
+      expect(() => getStoredAccent()).not.toThrow()
+      expect(resolveAccentState()).toEqual({ accent: 'indigo', userPreference: null })
+    } finally {
+      Object.defineProperty(window, 'localStorage', {
+        configurable: true,
+        value: {
+          clear: () => storage.clear(),
+          getItem: (key) => storage.get(key) ?? null,
+          setItem: (key, value) => storage.set(key, String(value)),
+        },
+      })
+    }
+  })
 })

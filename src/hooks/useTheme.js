@@ -7,7 +7,15 @@ export const ACCENT_STORAGE_KEY = 'dca-tracker:accent'
 export const VALID_ACCENTS = new Set(['indigo', 'amber', 'green', 'rose', 'mono'])
 
 function canUseBrowserStorage() {
-  return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined'
+  if (typeof window === 'undefined') {
+    return false
+  }
+
+  try {
+    return typeof window.localStorage !== 'undefined'
+  } catch {
+    return false
+  }
 }
 
 function getSystemTheme() {
