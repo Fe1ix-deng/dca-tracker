@@ -128,8 +128,8 @@
 }
 
 :root[data-theme='light'][data-accent='amber'] {
-  --color-accent-rgb: 198 97 63;
-  --color-accent-hover-rgb: 172 76 46;
+  --color-accent-rgb: 217 119 87;
+  --color-accent-hover-rgb: 191 93 66;
   --color-accent-soft-rgb: 247 229 221;
 }
 
