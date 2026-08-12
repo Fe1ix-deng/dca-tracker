@@ -124,4 +124,87 @@ describe('rebuildPlanState', () => {
     expect(nextRecords[0].assets).toHaveLength(1)
     expect(nextRecords[0].totalActualAmount).toBe(200)
   })
+
+  it('rebuilds historical shares and prices into the current split basis', () => {
+    const splitPlan = {
+      ...plan,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      currentPeriod: 1,
+      assets: [{
+        ...plan.assets[0],
+        currentShares: 12,
+        initialShares: 10,
+        initialAverageCost: 80,
+      }],
+      splitEvents: [{
+        id: 'split-1',
+        ticker: 'QLD',
+        effectiveDate: '2026-06-01',
+        newShares: 2,
+        oldShares: 1,
+      }],
+    }
+    const preSplitRecord = {
+      ...firstRecord,
+      date: '2026-05-01T00:00:00.000Z',
+      assets: [{ ...firstRecord.assets[0], price: 100, actualShares: 2, actualAmount: 200 }],
+    }
+
+    const { nextPlan, nextRecords } = rebuildPlanState(splitPlan, [preSplitRecord])
+    const adjustedAsset = nextRecords[0].assets[0]
+
+    expect(adjustedAsset.price).toBe(100)
+    expect(adjustedAsset.actualShares).toBe(2)
+    expect(adjustedAsset.adjustedPrice).toBe(50)
+    expect(adjustedAsset.adjustedShares).toBe(4)
+    expect(nextPlan.assets[0].initialShares).toBe(20)
+    expect(nextPlan.assets[0].initialAverageCost).toBe(40)
+    expect(nextPlan.assets[0].currentShares).toBe(24)
+  })
+
+  it('does not apply an event on or before a post-split record date', () => {
+    const splitPlan = {
+      ...plan,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      assets: [{ ...plan.assets[0], currentShares: 12, initialShares: 10 }],
+      splitEvents: [{
+        id: 'split-1',
+        ticker: 'QLD',
+        effectiveDate: '2026-06-01',
+        newShares: 2,
+        oldShares: 1,
+      }],
+    }
+    const postSplitRecord = {
+      ...firstRecord,
+      date: '2026-06-01T00:00:00.000Z',
+      assets: [{ ...firstRecord.assets[0], price: 50, actualShares: 4, actualAmount: 200 }],
+    }
+
+    const { nextRecords } = rebuildPlanState(splitPlan, [postSplitRecord])
+
+    expect(nextRecords[0].assets[0].adjustedShares).toBe(4)
+    expect(nextRecords[0].assets[0].adjustedPrice).toBe(50)
+  })
+
+  it('is idempotent when rebuilding already adjusted records', () => {
+    const splitPlan = {
+      ...plan,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      assets: [{ ...plan.assets[0], currentShares: 24, initialShares: 10 }],
+      splitEvents: [{
+        id: 'split-1',
+        ticker: 'QLD',
+        effectiveDate: '2026-06-01',
+        newShares: 2,
+        oldShares: 1,
+      }],
+    }
+    const rawRecord = { ...firstRecord, date: '2026-05-01T00:00:00.000Z' }
+    const firstBuild = rebuildPlanState(splitPlan, [rawRecord])
+    const secondBuild = rebuildPlanState(firstBuild.nextPlan, firstBuild.nextRecords)
+
+    expect(secondBuild.nextRecords[0].assets[0].adjustedShares).toBe(firstBuild.nextRecords[0].assets[0].adjustedShares)
+    expect(secondBuild.nextPlan.assets[0].currentShares).toBe(firstBuild.nextPlan.assets[0].currentShares)
+  })
 })

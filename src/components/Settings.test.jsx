@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { getSavedReserveRatio } from './Settings'
+import { getSavedReserveRatio, validateSplitEventDraft } from './Settings'
 
 describe('Settings helpers', () => {
   it('aligns the asset-weight status text and value on a shared baseline', () => {
@@ -26,5 +26,16 @@ describe('Settings helpers', () => {
 
   it('always saves zero reserve ratio for open-ended plans', () => {
     expect(getSavedReserveRatio(true, 0.2)).toBe(0)
+  })
+
+  it('validates a split event draft against configured tickers', () => {
+    expect(validateSplitEventDraft({ ticker: 'QLD', effectiveDate: '2026-06-01', ratio: '2:1' }, ['QLD'])).toEqual({
+      ticker: 'QLD',
+      effectiveDate: '2026-06-01',
+      newShares: 2,
+      oldShares: 1,
+    })
+    expect(validateSplitEventDraft({ ticker: 'SPY', effectiveDate: '2026-06-01', ratio: '2:1' }, ['QLD'])).toBeNull()
+    expect(validateSplitEventDraft({ ticker: 'QLD', effectiveDate: '2026-06-01', ratio: 'bad' }, ['QLD'])).toBeNull()
   })
 })

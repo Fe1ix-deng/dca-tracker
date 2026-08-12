@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Plus, Save, Sparkles, Trash2 } from 'lucide-react'
 import { estimateTargetYield } from '../utils/yieldEstimator'
 import { formatNumericInput, normalizeNumericInput } from '../utils/numericInput'
+import { normalizeDate, normalizeSplitEvents, parseSplitRatio } from '../utils/stockSplits'
 
 const strategyOptions = [
   { value: 'VA', label: 'VA定投' },
@@ -29,6 +30,22 @@ const frequencyOptions = [
 const OPEN_ENDED_PLACEHOLDER_PERIODS = 9999
 const MAX_RESERVE_RATIO = 0.3
 
+export function validateSplitEventDraft(draft, tickers = []) {
+  const ticker = String(draft?.ticker || '').trim().toUpperCase()
+  const effectiveDate = normalizeDate(draft?.effectiveDate)
+  const ratio = parseSplitRatio(draft?.ratio)
+  if (!ticker || !tickers.map((item) => String(item).toUpperCase()).includes(ticker) || !effectiveDate || !ratio) {
+    return null
+  }
+
+  return {
+    ticker,
+    effectiveDate,
+    newShares: ratio.newShares,
+    oldShares: ratio.oldShares,
+  }
+}
+
 function clampReserveRatio(value) {
   return Math.min(MAX_RESERVE_RATIO, Math.max(0, Number(value) || 0))
 }
@@ -47,6 +64,7 @@ function createDraftPlan() {
     frequency: 'monthly',
     targetAnnualReturn: 0.25,
     assets: [],
+    splitEvents: [],
     createdAt: '',
   }
 }
@@ -66,6 +84,7 @@ function normalizeFormPlan(source) {
   return {
     ...createDraftPlan(),
     ...base,
+    splitEvents: normalizeSplitEvents(base.splitEvents),
     budgetMode,
     reserveRatio: budgetMode === 'open-ended' ? 0 : clampReserveRatio(base.reserveRatio),
     periodicTarget: hasPeriodicTarget ? formatNumericInput(base.periodicTarget) : '',
@@ -85,6 +104,14 @@ function createAssetDraft() {
     weight: 1,
     currentShares: '',
     initialAverageCost: '',
+  }
+}
+
+function createSplitEventDraft() {
+  return {
+    ticker: '',
+    effectiveDate: new Date().toISOString().slice(0, 10),
+    ratio: '2:1',
   }
 }
 
@@ -143,12 +170,14 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData 
   const [form, setForm] = useState(() => normalizeFormPlan(plan))
   const [showAssetForm, setShowAssetForm] = useState(false)
   const [assetDraft, setAssetDraft] = useState(createAssetDraft())
+  const [splitEventDraft, setSplitEventDraft] = useState(createSplitEventDraft())
   const [estimatedRange, setEstimatedRange] = useState(null)
 
   useEffect(() => {
     setForm(normalizeFormPlan(plan))
     setShowAssetForm(false)
     setAssetDraft(createAssetDraft())
+    setSplitEventDraft(createSplitEventDraft())
     setEstimatedRange(null)
   }, [plan])
 
@@ -229,6 +258,7 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData 
     setForm((current) => ({
       ...current,
       assets: rebalanceWeights(current.assets.filter((asset) => asset.ticker !== ticker)),
+      splitEvents: (current.splitEvents || []).filter((event) => event.ticker !== ticker),
     }))
   }
 
@@ -283,6 +313,27 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData 
     })
   }
 
+  const addSplitEvent = () => {
+    const event = validateSplitEventDraft(splitEventDraft, form.assets.map((asset) => asset.ticker))
+    if (!event) return
+
+    setForm((current) => ({
+      ...current,
+      splitEvents: normalizeSplitEvents([
+        ...(current.splitEvents || []),
+        { ...event, id: `split-${Date.now()}`, createdAt: new Date().toISOString() },
+      ]),
+    }))
+    setSplitEventDraft(createSplitEventDraft())
+  }
+
+  const removeSplitEvent = (eventId) => {
+    setForm((current) => ({
+      ...current,
+      splitEvents: (current.splitEvents || []).filter((event) => event.id !== eventId),
+    }))
+  }
+
   const handleSave = () => {
     if (!canSave) {
       return
@@ -301,6 +352,7 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData 
       periodicTarget: periodicTargetValue,
       currentPeriod: Number(form.currentPeriod) || 0,
       targetAnnualReturn: Number(form.targetAnnualReturn) || 0.25,
+      splitEvents: normalizeSplitEvents(form.splitEvents),
       createdAt: form.createdAt || new Date().toISOString(),
       assets: form.assets.map((asset) => ({
         ...asset,
@@ -326,6 +378,7 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData 
     })
     setShowAssetForm(false)
     setAssetDraft(createAssetDraft())
+    setSplitEventDraft(createSplitEventDraft())
     setEstimatedRange(null)
   }
 
@@ -344,6 +397,7 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData 
     })
     setShowAssetForm(false)
     setAssetDraft(createAssetDraft())
+    setSplitEventDraft(createSplitEventDraft())
     setEstimatedRange(null)
     onNavigate('settings')
   }
@@ -775,6 +829,70 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData 
               <span>当前总权重：</span>
               <span className="data-value">{Math.round(totalWeight * 100)}%</span>
               <span>{!isWeightValid ? '，请调整到 100% 后才能保存。' : '，可以保存当前计划。'}</span>
+            </div>
+          </div>
+
+          <div className="settings-section">
+            <div className="settings-section-header">
+              <div>
+                <p className="mini-kicker">拆股与合股</p>
+                <p className="mt-2 text-sm text-muted-foreground">按生效日记录比例，历史股数和价格会自动换算；小数股会保留。</p>
+              </div>
+            </div>
+
+            <div className="mt-4 subtle-panel p-4">
+              <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_180px_160px_auto] md:items-end">
+                <label className="space-y-2">
+                  <span className="text-sm text-muted-foreground">标的</span>
+                  <select
+                    value={splitEventDraft.ticker}
+                    onChange={(event) => setSplitEventDraft((current) => ({ ...current, ticker: event.target.value }))}
+                    className="surface-input"
+                  >
+                    <option value="">选择标的</option>
+                    {form.assets.map((asset) => <option key={asset.ticker} value={asset.ticker}>{asset.ticker}</option>)}
+                  </select>
+                </label>
+                <label className="space-y-2">
+                  <span className="text-sm text-muted-foreground">生效日期</span>
+                  <input
+                    type="date"
+                    value={splitEventDraft.effectiveDate}
+                    onChange={(event) => setSplitEventDraft((current) => ({ ...current, effectiveDate: event.target.value }))}
+                    className="surface-input"
+                  />
+                </label>
+                <label className="space-y-2">
+                  <span className="text-sm text-muted-foreground">比例（新:旧）</span>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={splitEventDraft.ratio}
+                    placeholder="例如 2:1"
+                    onChange={(event) => setSplitEventDraft((current) => ({ ...current, ratio: event.target.value }))}
+                    className="surface-input financial-input"
+                  />
+                </label>
+                <button type="button" onClick={addSplitEvent} className="control-button-primary">
+                  <Plus size={16} />
+                  记录事件
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-4 space-y-2">
+              {(form.splitEvents || []).length ? (form.splitEvents || []).map((event) => (
+                <div key={event.id} className="subtle-row rounded-md border border-white/10 px-3 py-3 text-sm">
+                  <span className="data-value">{event.ticker}</span>
+                  <span className="text-muted-foreground">{event.effectiveDate}</span>
+                  <span className="data-value">{event.newShares}:{event.oldShares}</span>
+                  <button type="button" onClick={() => removeSplitEvent(event.id)} className="control-button-danger" aria-label={`删除 ${event.ticker} 拆股事件`}>
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              )) : (
+                <p className="text-sm text-muted-foreground">尚未记录拆股或合股事件。</p>
+              )}
             </div>
           </div>
         </div>

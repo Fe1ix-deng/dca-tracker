@@ -80,4 +80,25 @@ describe('portfolio cost helpers', () => {
   it('returns null price gap when average cost is unknown', () => {
     expect(calculatePriceGapPct(100, null)).toBeNull()
   })
+
+  it('uses split-adjusted recorded shares and cost when available', () => {
+    const result = calculateAverageCost({
+      ticker: 'QLD',
+      currentShares: 24,
+      initialShares: 20,
+      initialAverageCost: 40,
+    }, [{
+      assets: [{
+        ticker: 'QLD',
+        actualShares: 2,
+        actualAmount: 200,
+        adjustedShares: 4,
+        adjustedActualAmount: 200,
+      }],
+    }])
+
+    expect(result.recordedShares).toBe(4)
+    expect(result.recordedCost).toBe(200)
+    expect(result.averageCost).toBeCloseTo(41.67, 2)
+  })
 })

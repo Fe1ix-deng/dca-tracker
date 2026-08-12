@@ -12,8 +12,8 @@ function sumRecordedPosition(records = [], ticker) {
       }
 
       return {
-        shares: summary.shares + (Number(matchedAsset.actualShares) || 0),
-        cost: summary.cost + (Number(matchedAsset.actualAmount) || 0),
+        shares: summary.shares + (Number(matchedAsset.adjustedShares ?? matchedAsset.actualShares) || 0),
+        cost: summary.cost + (Number(matchedAsset.adjustedActualAmount ?? matchedAsset.actualAmount) || 0),
       }
     },
     { shares: 0, cost: 0 },

@@ -66,6 +66,8 @@ function toCsv(records) {
     'suggestedShares',
     'actualShares',
     'actualAmount',
+    'adjustedShares',
+    'adjustedPrice',
     'totalActualAmount',
     'cumulativeInvested',
     'remainingBudget',
@@ -86,6 +88,8 @@ function toCsv(records) {
       asset.suggestedShares,
       asset.actualShares,
       asset.actualAmount,
+      asset.adjustedShares ?? asset.actualShares,
+      asset.adjustedPrice ?? asset.price,
       record.totalActualAmount,
       record.cumulativeInvested,
       record.remainingBudget,
@@ -104,6 +108,18 @@ function createEditDraft(record) {
       price: formatNumericInput(asset.price),
       actualShares: formatNumericInput(asset.actualShares),
     })),
+  }
+}
+
+export function getAdjustedAssetDisplay(asset) {
+  const adjustedShares = Number(asset?.adjustedShares)
+  const adjustedPrice = Number(asset?.adjustedPrice)
+  const hasAdjustment = Number(asset?.splitFactor) > 0 && Number(asset.splitFactor) !== 1
+
+  return {
+    hasAdjustment,
+    shares: Number.isFinite(adjustedShares) ? adjustedShares : Number(asset?.actualShares) || 0,
+    price: Number.isFinite(adjustedPrice) ? adjustedPrice : Number(asset?.price) || 0,
   }
 }
 
@@ -587,7 +603,9 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
                 ) : expanded ? (
                   <div className="mt-5 border-t border-white/[0.06] pt-5">
                     <div className="grid gap-3">
-                      {record.assets.map((asset) => (
+                      {record.assets.map((asset) => {
+                        const adjusted = getAdjustedAssetDisplay(asset)
+                        return (
                         <div key={asset.ticker} className="subtle-panel p-4">
                           <div className="flex flex-wrap items-start justify-between gap-4">
                             <div>
@@ -633,8 +651,14 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
                               <p className="mt-2 data-subtle text-sm">{formatMoney(asset.actualAmount)}</p>
                             </div>
                           </div>
+                          {adjusted.hasAdjustment ? (
+                            <div className="mt-3 rounded-md border border-accent/20 bg-accent/10 px-3 py-3 text-sm text-textSoft">
+                              拆股调整后口径：{adjusted.shares} 股 · {formatMoneyPrecise(adjusted.price)}/股
+                            </div>
+                          ) : null}
                         </div>
-                      ))}
+                        )
+                      })}
                     </div>
                   </div>
                 ) : null}
