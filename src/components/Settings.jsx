@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Plus, Save, Sparkles, Trash2 } from 'lucide-react'
+import { ChevronDown, ChevronUp, Plus, Save, Sparkles, Trash2 } from 'lucide-react'
 import { estimateTargetYield } from '../utils/yieldEstimator'
 import { formatNumericInput, normalizeNumericInput } from '../utils/numericInput'
 import { normalizeDate, normalizeSplitEvents, parseSplitRatio } from '../utils/stockSplits'
@@ -169,6 +169,7 @@ export function getSavedReserveRatio(isOpenEnded, reserveRatio) {
 export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData }) {
   const [form, setForm] = useState(() => normalizeFormPlan(plan))
   const [showAssetForm, setShowAssetForm] = useState(false)
+  const [showSplitEvents, setShowSplitEvents] = useState(false)
   const [assetDraft, setAssetDraft] = useState(createAssetDraft())
   const [splitEventDraft, setSplitEventDraft] = useState(createSplitEventDraft())
   const [estimatedRange, setEstimatedRange] = useState(null)
@@ -176,6 +177,7 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData 
   useEffect(() => {
     setForm(normalizeFormPlan(plan))
     setShowAssetForm(false)
+    setShowSplitEvents(false)
     setAssetDraft(createAssetDraft())
     setSplitEventDraft(createSplitEventDraft())
     setEstimatedRange(null)
@@ -377,6 +379,7 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData 
       periodicTarget: '1000',
     })
     setShowAssetForm(false)
+    setShowSplitEvents(false)
     setAssetDraft(createAssetDraft())
     setSplitEventDraft(createSplitEventDraft())
     setEstimatedRange(null)
@@ -396,6 +399,7 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData 
       periodicTarget: '1000',
     })
     setShowAssetForm(false)
+    setShowSplitEvents(false)
     setAssetDraft(createAssetDraft())
     setSplitEventDraft(createSplitEventDraft())
     setEstimatedRange(null)
@@ -834,13 +838,27 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData 
 
           <div className="settings-section">
             <div className="settings-section-header">
-              <div>
+              <button
+                type="button"
+                onClick={() => setShowSplitEvents((current) => !current)}
+                aria-expanded={showSplitEvents}
+                aria-controls="split-events-panel"
+                className="flex min-w-0 flex-1 items-start justify-between gap-4 text-left"
+              >
+                <div>
                 <p className="mini-kicker">拆股与合股</p>
                 <p className="mt-2 text-sm text-muted-foreground">按生效日记录比例，历史股数和价格会自动换算；小数股会保留。</p>
-              </div>
+                </div>
+                {showSplitEvents ? <ChevronUp size={18} className="mt-0.5 shrink-0 text-muted-foreground" aria-hidden="true" /> : <ChevronDown size={18} className="mt-0.5 shrink-0 text-muted-foreground" aria-hidden="true" />}
+              </button>
             </div>
 
-            <div className="mt-4 subtle-panel p-4">
+            {showSplitEvents ? <div id="split-events-panel">
+            <div className="mt-4 rounded-md border border-accent/20 bg-accent/10 px-3 py-2 text-sm text-textSoft">
+              已加入草稿，保存计划后生效。
+            </div>
+
+            <div className="mt-3 subtle-panel p-4">
               <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_180px_160px_auto] md:items-end">
                 <label className="space-y-2">
                   <span className="text-sm text-muted-foreground">标的</span>
@@ -894,6 +912,7 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData 
                 <p className="text-sm text-muted-foreground">尚未记录拆股或合股事件。</p>
               )}
             </div>
+            </div> : null}
           </div>
         </div>
       </div>

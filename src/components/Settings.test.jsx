@@ -38,4 +38,12 @@ describe('Settings helpers', () => {
     expect(validateSplitEventDraft({ ticker: 'SPY', effectiveDate: '2026-06-01', ratio: '2:1' }, ['QLD'])).toBeNull()
     expect(validateSplitEventDraft({ ticker: 'QLD', effectiveDate: '2026-06-01', ratio: 'bad' }, ['QLD'])).toBeNull()
   })
+
+  it('keeps split event changes in the plan draft until the plan is saved', () => {
+    const settingsSource = readFileSync(new URL('./Settings.jsx', import.meta.url), 'utf8')
+
+    expect(settingsSource).toMatch(/const \[showSplitEvents, setShowSplitEvents\] = useState\(false\)/)
+    expect(settingsSource).toContain('已加入草稿，保存计划后生效')
+    expect(settingsSource).toMatch(/aria-expanded=\{showSplitEvents\}/)
+  })
 })
