@@ -110,7 +110,7 @@ function ThemeControl({ theme, accent = 'indigo', onToggleTheme, onChangeAccent,
       className="theme-control relative min-w-0"
       onKeyDown={handleAccentKeyDown}
     >
-      <div className="theme-control-actions flex min-h-11 items-stretch gap-1">
+      <div className="theme-control-actions min-h-11 items-stretch gap-1">
         <button
           type="button"
           aria-label={nextThemeLabel}

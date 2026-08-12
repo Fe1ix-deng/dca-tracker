@@ -115,6 +115,12 @@
   --color-accent-soft-rgb: 231 232 250;
 }
 
+:root[data-accent='amber'] {
+  --color-accent-rgb: 217 119 87;
+  --color-accent-hover-rgb: 235 145 113;
+  --color-accent-soft-rgb: 58 29 22;
+}
+
 :root[data-theme='dark'][data-accent='amber'] {
   --color-accent-rgb: 217 119 87;
   --color-accent-hover-rgb: 235 145 113;
@@ -125,6 +131,12 @@
   --color-accent-rgb: 198 97 63;
   --color-accent-hover-rgb: 172 76 46;
   --color-accent-soft-rgb: 247 229 221;
+}
+
+:root[data-accent='green'] {
+  --color-accent-rgb: 72 170 123;
+  --color-accent-hover-rgb: 102 199 151;
+  --color-accent-soft-rgb: 15 48 33;
 }
 
 :root[data-theme='dark'][data-accent='green'] {
@@ -139,6 +151,12 @@
   --color-accent-soft-rgb: 222 240 230;
 }
 
+:root[data-accent='rose'] {
+  --color-accent-rgb: 214 119 142;
+  --color-accent-hover-rgb: 235 148 168;
+  --color-accent-soft-rgb: 58 25 35;
+}
+
 :root[data-theme='dark'][data-accent='rose'] {
   --color-accent-rgb: 214 119 142;
   --color-accent-hover-rgb: 235 148 168;
@@ -149,6 +167,12 @@
   --color-accent-rgb: 189 92 115;
   --color-accent-hover-rgb: 162 67 91;
   --color-accent-soft-rgb: 246 226 232;
+}
+
+:root[data-accent='mono'] {
+  --color-accent-rgb: 190 190 190;
+  --color-accent-hover-rgb: 232 232 232;
+  --color-accent-soft-rgb: 45 45 45;
 }
 
 :root[data-theme='dark'][data-accent='mono'] {

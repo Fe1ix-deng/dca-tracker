@@ -26,3 +26,9 @@ Review follow-up fixes:
 Verification:
 - `npx vitest run src/theme.tokens.test.js src/components/Layout.theme.test.js src/hooks/useTheme.test.js`: 3 files, 9 tests passed.
 - `npm run build`: passed (`vite build`, 1691 modules transformed).
+
+Review-fix verification (2026-08-12):
+- Added exact unthemed `:root[data-accent='amber']`, `:root[data-accent='green']`, `:root[data-accent='rose']`, and `:root[data-accent='mono']` defaults; existing light/dark selectors remain later in the cascade and override them.
+- Removed the conflicting JSX `flex` utility from the `.theme-control-actions` wrapper so its component CSS grid applies directly.
+- `npx vitest run src/theme.tokens.test.js src/components/Layout.theme.test.js src/hooks/useTheme.test.js`: 3 files, 9 tests passed.
+- `npm run build`: passed (`vite build`, 1691 modules transformed).
