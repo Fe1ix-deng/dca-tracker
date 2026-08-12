@@ -103,6 +103,73 @@
   color-scheme: light;
 }
 
+:root[data-accent='indigo'] {
+  --color-accent-rgb: 94 106 210;
+  --color-accent-hover-rgb: 130 143 255;
+  --color-accent-soft-rgb: 30 32 58;
+}
+
+:root[data-theme='light'][data-accent='indigo'] {
+  --color-accent-rgb: 94 106 210;
+  --color-accent-hover-rgb: 71 84 199;
+  --color-accent-soft-rgb: 231 232 250;
+}
+
+:root[data-theme='dark'][data-accent='amber'] {
+  --color-accent-rgb: 217 119 87;
+  --color-accent-hover-rgb: 235 145 113;
+  --color-accent-soft-rgb: 58 29 22;
+}
+
+:root[data-theme='light'][data-accent='amber'] {
+  --color-accent-rgb: 198 97 63;
+  --color-accent-hover-rgb: 172 76 46;
+  --color-accent-soft-rgb: 247 229 221;
+}
+
+:root[data-theme='dark'][data-accent='green'] {
+  --color-accent-rgb: 72 170 123;
+  --color-accent-hover-rgb: 102 199 151;
+  --color-accent-soft-rgb: 15 48 33;
+}
+
+:root[data-theme='light'][data-accent='green'] {
+  --color-accent-rgb: 47 133 95;
+  --color-accent-hover-rgb: 35 108 75;
+  --color-accent-soft-rgb: 222 240 230;
+}
+
+:root[data-theme='dark'][data-accent='rose'] {
+  --color-accent-rgb: 214 119 142;
+  --color-accent-hover-rgb: 235 148 168;
+  --color-accent-soft-rgb: 58 25 35;
+}
+
+:root[data-theme='light'][data-accent='rose'] {
+  --color-accent-rgb: 189 92 115;
+  --color-accent-hover-rgb: 162 67 91;
+  --color-accent-soft-rgb: 246 226 232;
+}
+
+:root[data-theme='dark'][data-accent='mono'] {
+  --color-accent-rgb: 190 190 190;
+  --color-accent-hover-rgb: 232 232 232;
+  --color-accent-soft-rgb: 45 45 45;
+}
+
+:root[data-theme='light'][data-accent='mono'] {
+  --color-accent-rgb: 34 34 34;
+  --color-accent-hover-rgb: 0 0 0;
+  --color-accent-soft-rgb: 229 229 226;
+  --color-surface-rgb: 241 241 238;
+  --color-panel-rgb: 250 250 247;
+  --color-elevated-rgb: 246 246 243;
+  --color-line-rgb: 221 221 218;
+  --select-bg: #fafaf7;
+  --shadow-glow: 0 0 0 1px rgb(var(--color-accent-rgb) / 0.1), 0 12px 24px rgba(38, 39, 43, 0.08);
+  --shadow-card: inset 0 1px 0 rgba(255, 255, 255, 0.85), 0 14px 32px rgba(38, 39, 43, 0.08);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -554,6 +621,82 @@ textarea:focus-visible {
     @apply border-accent/25 bg-accent/10;
   }
 
+  .theme-control {
+    position: relative;
+    min-width: 0;
+  }
+
+  .theme-control-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 2.75rem;
+    gap: 0.25rem;
+  }
+
+  .theme-control-actions .theme-toggle {
+    min-width: 0;
+    border-radius: 0.5rem;
+  }
+
+  .theme-arrow {
+    min-height: 2.75rem;
+    width: 2.75rem;
+    border: 1px solid rgb(var(--color-line-rgb) / 0.08);
+    border-radius: 0.5rem;
+    background: rgb(var(--color-panel-rgb) / 0.72);
+    color: rgb(var(--color-text-rgb));
+  }
+
+  .theme-arrow:hover {
+    border-color: rgb(var(--color-accent-rgb) / 0.25);
+    background: rgb(var(--color-accent-rgb) / 0.1);
+  }
+
+  .theme-accent-menu {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 0.5rem);
+    z-index: 50;
+    display: grid;
+    min-width: 13rem;
+    gap: 0.25rem;
+    padding: 0.4rem;
+    border: 1px solid rgb(var(--color-line-rgb) / 0.18);
+    border-radius: 0.5rem;
+    background: rgb(var(--color-panel-rgb) / 0.98);
+    box-shadow: var(--shadow-card);
+  }
+
+  .theme-accent-option {
+    display: grid;
+    grid-template-columns: 1.25rem minmax(0, 1fr) 1rem;
+    align-items: center;
+    gap: 0.6rem;
+    width: 100%;
+    min-height: 2.75rem;
+    padding: 0.45rem 0.6rem;
+    border: 1px solid transparent;
+    border-radius: 0.4rem;
+    color: rgb(var(--color-text-soft-rgb));
+    text-align: left;
+    transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
+  }
+
+  .theme-accent-option:hover,
+  .theme-accent-option:focus-visible,
+  .theme-accent-option[aria-checked='true'] {
+    border-color: rgb(var(--color-accent-rgb) / 0.2);
+    background: rgb(var(--color-accent-rgb) / 0.1);
+    color: rgb(var(--color-text-rgb));
+  }
+
+  .theme-accent-swatch {
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid rgb(var(--color-panel-rgb));
+    border-radius: 999px;
+    box-shadow: 0 0 0 1px rgb(var(--color-line-rgb) / 0.35);
+  }
+
   .mobile-topbar {
     @apply fixed inset-x-0 top-0 z-30 grid min-h-[5.35rem] grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-line/[0.08] bg-panel/90 px-4 py-3 backdrop-blur-xl lg:hidden;
   }
@@ -847,7 +990,21 @@ textarea:focus-visible {
   }
 
   .dashboard-overview-card {
-    overflow: visible;
+    overflow: hidden;
+  }
+
+  .app-toolbar {
+    align-items: center;
+    display: flex;
+    justify-content: flex-end;
+    position: fixed;
+    right: max(2rem, calc((100vw - 17.5rem - 80rem) / 2 + 2rem));
+    top: 1.25rem;
+    z-index: 40;
+  }
+
+  .mobile-release-notice {
+    display: none;
   }
 
   .release-notice {
@@ -897,7 +1054,7 @@ textarea:focus-visible {
   @keyframes release-notice-contract {
     to {
       opacity: 0;
-      transform: translateY(-1.9rem) scale(0.18);
+      transform: translateY(-3.15rem) scale(0.11);
     }
   }
 
@@ -1155,6 +1312,15 @@ textarea:focus-visible {
   }
 
   @media (max-width: 640px) {
+    .desktop-release-notice {
+      display: none;
+    }
+
+    .mobile-release-notice {
+      display: block;
+      flex-shrink: 0;
+    }
+
     .app-content {
       @apply px-3;
       padding-bottom: calc(env(safe-area-inset-bottom) + 7.75rem);
@@ -1186,7 +1352,25 @@ textarea:focus-visible {
     }
 
     .theme-toggle-compact {
-      @apply h-9 min-h-9 w-9;
+      @apply h-11 min-h-11 w-11;
+    }
+
+    .theme-arrow-compact {
+      height: 2.75rem;
+      min-height: 2.75rem;
+      width: 2.75rem;
+    }
+
+    .theme-control-actions {
+      gap: 0.2rem;
+    }
+
+    .theme-accent-menu {
+      min-width: min(15rem, calc(100vw - 1rem));
+    }
+
+    .theme-accent-option {
+      min-height: 2.75rem;
     }
 
     .shell-plan-compact {
@@ -1317,6 +1501,10 @@ textarea:focus-visible {
 
     .shell-plan-compact {
       width: clamp(6.25rem, 36vw, 8.5rem);
+    }
+
+    .theme-control-actions {
+      grid-template-columns: minmax(0, 1fr) 2.75rem;
     }
 
     .mobile-tabbar-grid {
