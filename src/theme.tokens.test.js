@@ -28,4 +28,8 @@ describe('accent theme tokens', () => {
     expect(stylesSource).toContain('background: rgb(var(--color-accent-rgb) / 0.12);')
     expect(stylesSource).toContain('border-color: transparent;')
   })
+
+  it('opens the mobile palette below the topbar control', () => {
+    expect(stylesSource).toMatch(/@media\s*\(max-width:\s*640px\)[\s\S]*?\.theme-accent-menu\s*\{[\s\S]*?bottom:\s*auto;[\s\S]*?top:\s*calc\(100% \+ 0\.5rem\);/)
+  })
 })

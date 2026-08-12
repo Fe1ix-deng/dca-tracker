@@ -1326,7 +1326,9 @@ textarea:focus-visible {
     }
 
     .theme-accent-menu {
-      min-width: min(15rem, calc(100vw - 1rem));
+      width: min(15rem, calc(100vw - 1.5rem));
+      bottom: auto;
+      top: calc(100% + 0.5rem);
     }
 
     .theme-accent-option {
