@@ -9,6 +9,12 @@ describe('theme palette control', () => {
     for (const id of ['indigo', 'amber', 'green', 'rose', 'mono']) expect(layoutSource).toContain(`id: '${id}'`)
   })
 
+  it('uses neutral user-facing names without brand references', () => {
+    expect(layoutSource).toContain("label: '暖橙'")
+    expect(layoutSource).toContain("label: '松针绿'")
+    expect(layoutSource).not.toContain('Claude')
+  })
+
   it('wires accent through App into Layout', () => {
     expect(appSource).toContain('const { accent, setAccent')
     expect(appSource).toContain('accent={accent}')

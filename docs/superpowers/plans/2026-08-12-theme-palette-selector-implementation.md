@@ -197,7 +197,7 @@ Pass `accent={accent}` and `onChangeAccent={setAccent}` to `<Layout />`. Keep `o
 In `Layout.jsx`:
 
 1. Import `Check`, `ChevronDown`, `Moon`, and `SunMedium` from lucide-react.
-2. Define a module-level `accentOptions` array with exactly these IDs and user-facing labels: `indigo / 经典靛蓝`, `amber / Claude 陶土琥珀`, `green / 资产绿`, `rose / 柔玫红`, `mono / 黑白灰`.
+2. Define a module-level `accentOptions` array with exactly these IDs and user-facing labels: `indigo / 经典靛蓝`, `amber / 暖橙`, `green / 松针绿`, `rose / 柔玫红`, `mono / 黑白灰`.
 3. Replace `ThemeButton` with a `ThemeControl` component holding `isAccentMenuOpen` state and a `ref` for the wrapper.
 4. Render an icon+text theme button on desktop and icon-only theme button on compact mobile, plus a separate arrow button with `aria-haspopup="menu"`, `aria-expanded`, and an accessible label.
 5. Render the menu only when open. Each option is a `button role="menuitemradio"` with `aria-checked`, a color swatch, visible label, and `Check` for the selected option. It must call `onChangeAccent(option.id)` and close the menu.
@@ -261,8 +261,8 @@ Add selectors after the existing light/dark token blocks. Keep each accent's RGB
 }
 
 :root[data-theme='light'][data-accent='amber'] {
-  --color-accent-rgb: 198 97 63;
-  --color-accent-hover-rgb: 172 76 46;
+  --color-accent-rgb: 217 119 87;
+  --color-accent-hover-rgb: 191 93 66;
   --color-accent-soft-rgb: 247 229 221;
 }
 
@@ -449,7 +449,7 @@ With a desktop viewport, check:
 
 1. The main control toggles `日间` / `夜间` without opening the palette.
 2. The arrow opens a menu with five options, and the menu closes on selection, outside pointerdown, and `Escape`.
-3. Choosing `Claude 陶土琥珀`, `资产绿`, `柔玫红`, and `黑白灰` updates navigation active state, buttons, focus rings, and chart accents immediately.
+3. Choosing `暖橙`, `松针绿`, `柔玫红`, and `黑白灰` updates navigation active state, buttons, focus rings, and chart accents immediately.
 4. Reloading preserves theme and accent independently.
 
 - [ ] **Step 5: Verify the mobile interaction**

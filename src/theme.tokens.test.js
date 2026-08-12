@@ -17,6 +17,11 @@ describe('accent theme tokens', () => {
     expect(stylesSource).toContain('221 221 218')
   })
 
+  it('uses the confirmed warm orange accent across color modes', () => {
+    expect(stylesSource).toContain("--color-accent-rgb: 217 119 87;")
+    expect(stylesSource).toContain("--color-accent-hover-rgb: 191 93 66;")
+  })
+
   it('keeps the theme toggle readable across both color schemes', () => {
     expect(stylesSource).toContain('.theme-control .theme-toggle {')
     expect(stylesSource).toContain('color: rgb(var(--color-text-rgb));')
