@@ -3,6 +3,8 @@ import { useCallback, useEffect, useState } from 'react'
 const THEME_STORAGE_KEY = 'dca-tracker:theme'
 const DARK_QUERY = '(prefers-color-scheme: dark)'
 const VALID_THEMES = new Set(['light', 'dark'])
+export const ACCENT_STORAGE_KEY = 'dca-tracker:accent'
+export const VALID_ACCENTS = new Set(['indigo', 'amber', 'green', 'rose', 'mono'])
 
 function canUseBrowserStorage() {
   return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined'
@@ -50,8 +52,43 @@ function resolveThemeState() {
   }
 }
 
+export function getStoredAccent() {
+  if (!canUseBrowserStorage()) {
+    return null
+  }
+
+  try {
+    const value = window.localStorage.getItem(ACCENT_STORAGE_KEY)
+    return VALID_ACCENTS.has(value) ? value : null
+  } catch {
+    return null
+  }
+}
+
+export function resolveAccentState() {
+  const userPreference = getStoredAccent()
+
+  return {
+    accent: userPreference || 'indigo',
+    userPreference,
+  }
+}
+
+function saveAccent(accent) {
+  if (!canUseBrowserStorage()) {
+    return
+  }
+
+  try {
+    window.localStorage.setItem(ACCENT_STORAGE_KEY, accent)
+  } catch {
+    // Accent persistence is a convenience; rendering should continue if storage is unavailable.
+  }
+}
+
 export default function useTheme() {
   const [themeState, setThemeState] = useState(resolveThemeState)
+  const [accentState, setAccentState] = useState(resolveAccentState)
 
   useEffect(() => {
     if (typeof document === 'undefined') {
@@ -61,6 +98,14 @@ export default function useTheme() {
     document.documentElement.dataset.theme = themeState.theme
     document.documentElement.style.colorScheme = themeState.theme
   }, [themeState.theme])
+
+  useEffect(() => {
+    if (typeof document === 'undefined') {
+      return
+    }
+
+    document.documentElement.dataset.accent = accentState.accent
+  }, [accentState.accent])
 
   useEffect(() => {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
@@ -114,9 +159,23 @@ export default function useTheme() {
     })
   }, [])
 
+  const setAccent = useCallback((nextAccent) => {
+    if (!VALID_ACCENTS.has(nextAccent)) {
+      return
+    }
+
+    saveAccent(nextAccent)
+    setAccentState({
+      accent: nextAccent,
+      userPreference: nextAccent,
+    })
+  }, [])
+
   return {
     theme: themeState.theme,
     isUserPreference: Boolean(themeState.userPreference),
+    accent: accentState.accent,
+    setAccent,
     setTheme,
     toggleTheme,
   }
