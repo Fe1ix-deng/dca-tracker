@@ -696,6 +696,9 @@ textarea:focus-visible {
   }
 
   .theme-arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     min-height: 2.75rem;
     width: 2.75rem;
     border: 1px solid rgb(var(--color-line-rgb) / 0.08);

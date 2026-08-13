@@ -29,6 +29,10 @@ describe('global release notice placement', () => {
     expect(stylesSource).toMatch(/\.theme-control \.theme-toggle:not\(\.theme-toggle-compact\) > span\s*\{[\s\S]*left:\s*50%;[\s\S]*transform:/)
   })
 
+  it('centers the theme menu arrow inside its button', () => {
+    expect(stylesSource).toMatch(/\.theme-arrow\s*\{[\s\S]*display:\s*inline-flex;[\s\S]*align-items:\s*center;[\s\S]*justify-content:\s*center;/)
+  })
+
   it('uses a positioned plan selector arrow instead of the native arrow', () => {
     expect(layoutSource).toContain('className="shell-plan-select-wrap"')
     expect(layoutSource).toMatch(/<ChevronDown[\s\S]*className="shell-plan-select-arrow"/)
