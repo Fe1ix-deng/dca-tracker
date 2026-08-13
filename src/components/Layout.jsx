@@ -24,7 +24,6 @@ const accentOptions = [
   { id: 'indigo', label: '经典靛蓝', color: '#5e6ad2' },
   { id: 'amber', label: '暖橙', color: '#d97757' },
   { id: 'green', label: '松针绿', color: '#3ca374' },
-  { id: 'rose', label: '柔玫红', color: '#d46b86' },
   { id: 'mono', label: '黑白灰', color: '#a5a8b2' },
 ]
 

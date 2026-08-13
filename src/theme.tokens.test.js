@@ -4,10 +4,11 @@ import { describe, expect, it } from 'vitest'
 const stylesSource = readFileSync(new URL('./index.css', import.meta.url), 'utf8')
 
 describe('accent theme tokens', () => {
-  it('defines all approved accent selectors', () => {
-    for (const id of ['indigo', 'amber', 'green', 'rose', 'mono']) {
+  it('defines all approved accent selectors without the removed red palette', () => {
+    for (const id of ['indigo', 'amber', 'green', 'mono']) {
       expect(stylesSource).toContain(`data-accent='${id}'`)
     }
+    expect(stylesSource).not.toContain("data-accent='rose'")
     expect(stylesSource).toContain('--color-accent-rgb')
   })
 

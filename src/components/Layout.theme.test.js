@@ -5,8 +5,9 @@ const layoutSource = readFileSync(new URL('./Layout.jsx', import.meta.url), 'utf
 const appSource = readFileSync(new URL('../App.jsx', import.meta.url), 'utf8')
 
 describe('theme palette control', () => {
-  it('defines the five approved accent ids', () => {
-    for (const id of ['indigo', 'amber', 'green', 'rose', 'mono']) expect(layoutSource).toContain(`id: '${id}'`)
+  it('defines the four approved accent ids without the removed red palette', () => {
+    for (const id of ['indigo', 'amber', 'green', 'mono']) expect(layoutSource).toContain(`id: '${id}'`)
+    expect(layoutSource).not.toContain("id: 'rose'")
   })
 
   it('uses neutral user-facing names without brand references', () => {

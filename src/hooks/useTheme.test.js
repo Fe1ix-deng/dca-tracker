@@ -30,6 +30,11 @@ describe('accent preference', () => {
     expect(resolveAccentState()).toEqual({ accent: 'indigo', userPreference: null })
   })
 
+  it('migrates the removed rose accent back to indigo', () => {
+    window.localStorage.setItem('dca-tracker:accent', 'rose')
+    expect(resolveAccentState()).toEqual({ accent: 'indigo', userPreference: null })
+  })
+
   it('treats a throwing localStorage getter as unavailable', () => {
     Object.defineProperty(window, 'localStorage', {
       configurable: true,

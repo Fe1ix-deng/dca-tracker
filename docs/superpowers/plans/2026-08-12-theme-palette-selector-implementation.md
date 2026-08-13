@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 在现有日间 / 夜间主题旁增加五套可持久化强调色，并通过主题控件右侧箭头打开可访问的颜色弹层。
+**Goal:** 在现有日间 / 夜间主题旁增加四套可持久化强调色，并通过主题控件右侧箭头打开可访问的颜色弹层。
 
 **Architecture:** 扩展 `useTheme` 管理独立的 `accent` 状态和 `data-accent` 根属性；`App` 将 `accent` 与 `setAccent` 透传给 `Layout`。`Layout` 将当前主题按钮拆为日间 / 夜间主按钮与颜色箭头按钮，弹层只在打开时渲染；`index.css` 通过 accent 选择器覆盖既有强调色 token，并为黑白灰日间方案覆盖柔和灰白 surface token。
 
@@ -12,7 +12,7 @@
 
 - 仅增加强调色，不改变现有日间 / 夜间主题状态、业务数据流或语义正负/警告/信息色。
 - 颜色选项只显示名称、色板和选中态；灵感来源只保留在设计文档，不进入生产弹层。
-- 默认强调色为 `indigo`；有效值为 `indigo | amber | green | rose | mono`。
+- 默认强调色为 `indigo`；有效值为 `indigo | amber | green | mono`。
 - 现有 `dca-tracker:theme` 保持不变；强调色使用独立存储键 `dca-tracker:accent`。
 - 日间黑白灰画布使用 `#F1F1EE`，面板使用 `#FAFAF7`，边框使用 `#DDDDDA`。
 - 触摸目标不小于 44px；支持键盘焦点、`Escape` 关闭和点击外部关闭。
@@ -27,7 +27,7 @@
 - Modify: `src/App.jsx` — 从 hook 取出 `accent`、`setAccent`，传给 `Layout`。
 - Modify: `src/components/Layout.jsx` — 新增颜色选项定义、分体主题控件、弹层交互、焦点管理和无障碍属性。
 - Create: `src/components/Layout.theme.test.js` — 对选项 ID/标签、分体按钮、`aria-expanded`、外部关闭和 `Escape` 契约做源码级回归测试（项目当前未安装 DOM 测试库，避免新增依赖）。
-- Modify: `src/index.css` — 主题分体控件/弹层样式、五组 accent token、mono light surface 覆盖、响应式定位和减少动画处理。
+- Modify: `src/index.css` — 主题分体控件/弹层样式、四组 accent token、mono light surface 覆盖、响应式定位和减少动画处理。
 - Modify: `src/components/Dashboard.jsx` — 如图表存在硬编码主色，只替换为现有 CSS token 读取；若已通过 `var(--color-accent-rgb)` 间接消费，则保持不变。
 - Modify: `src/components/History.jsx`, `src/components/Settings.jsx`, `src/components/OperationPanel.jsx` — 仅在验证发现硬编码强调色时替换为 token；无硬编码则不改。
 
@@ -100,7 +100,7 @@ In `src/hooks/useTheme.js`:
 
 ```js
 export const ACCENT_STORAGE_KEY = 'dca-tracker:accent'
-export const VALID_ACCENTS = new Set(['indigo', 'amber', 'green', 'rose', 'mono'])
+export const VALID_ACCENTS = new Set(['indigo', 'amber', 'green', 'mono'])
 
 export function getStoredAccent() {
   if (!canUseBrowserStorage()) return null
@@ -143,7 +143,7 @@ git commit -m "feat: persist accent theme preference"
 **Interfaces:**
 - `Layout` accepts `accent = 'indigo'` and `onChangeAccent` props.
 - `ThemeButton` becomes a local `ThemeControl` that accepts `theme`, `accent`, `onToggleTheme`, and `onChangeAccent`.
-- `onChangeAccent(id)` is called only for one of the five valid IDs and closes the popover.
+- `onChangeAccent(id)` is called only for one of the four valid IDs and closes the popover.
 
 - [ ] **Step 1: Write failing source-contract tests**
 
@@ -157,8 +157,8 @@ const layoutSource = readFileSync(new URL('./Layout.jsx', import.meta.url), 'utf
 const appSource = readFileSync(new URL('../App.jsx', import.meta.url), 'utf8')
 
 describe('theme palette control', () => {
-  it('defines the five approved accent ids', () => {
-    for (const id of ['indigo', 'amber', 'green', 'rose', 'mono']) expect(layoutSource).toContain(`id: '${id}'`)
+  it('defines the four approved accent ids', () => {
+    for (const id of ['indigo', 'amber', 'green', 'mono']) expect(layoutSource).toContain(`id: '${id}'`)
   })
 
   it('wires accent through App into Layout', () => {
@@ -197,7 +197,7 @@ Pass `accent={accent}` and `onChangeAccent={setAccent}` to `<Layout />`. Keep `o
 In `Layout.jsx`:
 
 1. Import `Check`, `ChevronDown`, `Moon`, and `SunMedium` from lucide-react.
-2. Define a module-level `accentOptions` array with exactly these IDs and user-facing labels: `indigo / 经典靛蓝`, `amber / 暖橙`, `green / 松针绿`, `rose / 柔玫红`, `mono / 黑白灰`.
+2. Define a module-level `accentOptions` array with exactly these IDs and user-facing labels: `indigo / 经典靛蓝`, `amber / 暖橙`, `green / 松针绿`, `mono / 黑白灰`.
 3. Replace `ThemeButton` with a `ThemeControl` component holding `isAccentMenuOpen` state and a `ref` for the wrapper.
 4. Render an icon+text theme button on desktop and icon-only theme button on compact mobile, plus a separate arrow button with `aria-haspopup="menu"`, `aria-expanded`, and an accessible label.
 5. Render the menu only when open. Each option is a `button role="menuitemradio"` with `aria-checked`, a color swatch, visible label, and `Check` for the selected option. It must call `onChangeAccent(option.id)` and close the menu.
@@ -226,15 +226,15 @@ git commit -m "feat: add expandable accent palette control"
 - Inspect/modify only if needed: `src/components/Dashboard.jsx`, `src/components/History.jsx`, `src/components/Settings.jsx`, `src/components/OperationPanel.jsx`
 
 **Interfaces:**
-- Root HTML has both `data-theme="light|dark"` and `data-accent="indigo|amber|green|rose|mono"`.
+- Root HTML has both `data-theme="light|dark"` and `data-accent="indigo|amber|green|mono"`.
 - Existing Tailwind semantic classes continue to read the same custom-property names.
 
 - [ ] **Step 1: Add a failing stylesheet contract test**
 
-Extend `src/components/Layout.theme.test.js` or create `src/theme.tokens.test.js` to read `src/index.css` and assert all five selectors include accent token overrides, plus the mono light surface values:
+Extend `src/components/Layout.theme.test.js` or create `src/theme.tokens.test.js` to read `src/index.css` and assert all four selectors include accent token overrides, plus the mono light surface values:
 
 ```js
-for (const id of ['indigo', 'amber', 'green', 'rose', 'mono']) {
+for (const id of ['indigo', 'amber', 'green', 'mono']) {
   expect(stylesSource).toContain(`:root[data-accent='${id}']`)
   expect(stylesSource).toContain('--color-accent-rgb')
 }
@@ -286,18 +286,6 @@ Add the remaining explicit selectors with these values:
   --color-accent-rgb: 72 170 123;
   --color-accent-hover-rgb: 102 199 151;
   --color-accent-soft-rgb: 15 48 33;
-}
-
-:root[data-theme='light'][data-accent='rose'] {
-  --color-accent-rgb: 189 92 115;
-  --color-accent-hover-rgb: 162 67 91;
-  --color-accent-soft-rgb: 246 226 232;
-}
-
-:root[data-theme='dark'][data-accent='rose'] {
-  --color-accent-rgb: 214 119 142;
-  --color-accent-hover-rgb: 235 148 168;
-  --color-accent-soft-rgb: 58 25 35;
 }
 
 :root[data-theme='light'][data-accent='mono'] {
@@ -408,7 +396,7 @@ Any hard-coded value used as an accent, active state, focus ring, or chart serie
 
 Run: `npx vitest run src/theme.tokens.test.js src/components/Layout.theme.test.js`
 
-Expected: PASS with all five selectors and mono light values present.
+Expected: PASS with all four selectors and mono light values present.
 
 - [ ] **Step 7: Commit styling and token changes**
 
@@ -448,8 +436,8 @@ Expected: Vite prints a local URL. Use that URL for browser verification; if the
 With a desktop viewport, check:
 
 1. The main control toggles `日间` / `夜间` without opening the palette.
-2. The arrow opens a menu with five options, and the menu closes on selection, outside pointerdown, and `Escape`.
-3. Choosing `暖橙`, `松针绿`, `柔玫红`, and `黑白灰` updates navigation active state, buttons, focus rings, and chart accents immediately.
+2. The arrow opens a menu with four options, and the menu closes on selection, outside pointerdown, and `Escape`.
+3. Choosing `暖橙`, `松针绿`, and `黑白灰` updates navigation active state, buttons, focus rings, and chart accents immediately.
 4. Reloading preserves theme and accent independently.
 
 - [ ] **Step 5: Verify the mobile interaction**
@@ -458,7 +446,7 @@ At a narrow viewport, confirm the compact control and menu stay inside the viewp
 
 - [ ] **Step 6: Verify screen coverage**
 
-Inspect Dashboard, Operation, History, and Settings in both `light` and `dark` with at least `amber` and `mono`, then spot-check `indigo`, `green`, and `rose`. Confirm semantic profit/loss/warning/info colors remain recognizable and no page becomes unreadable.
+Inspect Dashboard, Operation, History, and Settings in both `light` and `dark` with at least `amber` and `mono`, then spot-check `indigo` and `green`. Confirm semantic profit/loss/warning/info colors remain recognizable and no page becomes unreadable.
 
 - [ ] **Step 7: Review final diff and commit verification fixes**
 

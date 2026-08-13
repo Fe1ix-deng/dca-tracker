@@ -151,24 +151,6 @@
   --color-accent-soft-rgb: 222 240 230;
 }
 
-:root[data-accent='rose'] {
-  --color-accent-rgb: 214 119 142;
-  --color-accent-hover-rgb: 235 148 168;
-  --color-accent-soft-rgb: 58 25 35;
-}
-
-:root[data-theme='dark'][data-accent='rose'] {
-  --color-accent-rgb: 214 119 142;
-  --color-accent-hover-rgb: 235 148 168;
-  --color-accent-soft-rgb: 58 25 35;
-}
-
-:root[data-theme='light'][data-accent='rose'] {
-  --color-accent-rgb: 189 92 115;
-  --color-accent-hover-rgb: 162 67 91;
-  --color-accent-soft-rgb: 246 226 232;
-}
-
 :root[data-accent='mono'] {
   --color-accent-rgb: 190 190 190;
   --color-accent-hover-rgb: 232 232 232;

@@ -4,7 +4,7 @@ const THEME_STORAGE_KEY = 'dca-tracker:theme'
 const DARK_QUERY = '(prefers-color-scheme: dark)'
 const VALID_THEMES = new Set(['light', 'dark'])
 export const ACCENT_STORAGE_KEY = 'dca-tracker:accent'
-export const VALID_ACCENTS = new Set(['indigo', 'amber', 'green', 'rose', 'mono'])
+export const VALID_ACCENTS = new Set(['indigo', 'amber', 'green', 'mono'])
 
 function canUseBrowserStorage() {
   if (typeof window === 'undefined') {

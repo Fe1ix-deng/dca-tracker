@@ -8,14 +8,13 @@
 
 ## 已确认的配色
 
-颜色选择器提供五个选项，默认保持现有靛蓝：
+颜色选择器提供四个选项，默认保持现有靛蓝：
 
 | id | 名称 | 强调色 | 灵感来源 | 日间预览底色 |
 | --- | --- | --- | --- | --- |
 | `indigo` | 经典靛蓝 | `#5E6AD2` | 当前产品基线与 Linear 风格界面 | 沿用现有日间 token |
 | `amber` | 暖橙 | `#D97757` | 参考页面截图取样得到的明亮橙珊瑚色；生产界面不使用品牌名称 | `#FAF9F5` 方向 |
 | `green` | 松针绿 | `#2F855F` | 金融产品的正向收益语义与克制的松针绿 | 轻微绿色倾向 |
-| `rose` | 柔玫红 | `#BD5C73` | 编辑产品常用的 muted rose，与负向语义红区分 | 轻微玫灰倾向 |
 | `mono` | 黑白灰 | `#222222` | Swiss / 黑白编辑设计的无彩色系统 | 画布 `#F1F1EE`，面板 `#FAFAF7`，边框 `#DDDDDA` 层级 |
 
 `#D97757` 是从参考页面截图取样得到的主橙珊瑚色；日间与夜间使用同一主色，分别配置适合背景的 hover 和 soft 变体。生产弹层只显示“暖橙”和“松针绿”等中性名称，不显示品牌或灵感来源。`mono` 的黑白灰预览只代表该选项的日间无彩色底色；夜间仍沿用现有炭黑 surface ladder。
@@ -48,7 +47,7 @@
 ```js
 {
   theme: 'light' | 'dark',
-  accent: 'indigo' | 'amber' | 'green' | 'rose' | 'mono',
+  accent: 'indigo' | 'amber' | 'green' | 'mono',
   isUserPreference: boolean,
   setTheme(nextTheme),
   toggleTheme(),
@@ -84,7 +83,7 @@
 
 - `useTheme`：负责主题和强调色的解析、持久化、根节点属性同步。
 - `Layout`：负责主题分体按钮、颜色箭头、弹层开关和无障碍焦点管理。
-- `index.css`：负责五套强调色 token、弹层布局、选中态、响应式位置和颜色过渡。
+- `index.css`：负责四套强调色 token、弹层布局、选中态、响应式位置和颜色过渡。
 - `App`：从 `useTheme` 取出 `accent` 与 `setAccent`，透传到 `Layout`；不改变业务页面和数据流。
 
 ## 数据流
@@ -109,6 +108,7 @@ localStorage + <html data-accent="id">
 - 弹层无选项或状态异常时不渲染空白面板，回退 `indigo`。
 - 快速重复点击只保留最后一个有效选项，避免关闭动画期间写入无效值。
 - 颜色弹层必须有明确的关闭路径，不能阻塞页面滚动、底部导航或侧栏其他按钮。
+- 历史存储中的 `rose` 值视为无效并回退到 `indigo`。
 - 系统切换日间 / 夜间时，只更新 `data-theme`；已选强调色保持不变。
 
 ## 测试与验证
@@ -124,7 +124,7 @@ localStorage + <html data-accent="id">
 
 ### 视觉验证
 
-- 桌面端侧栏：五种 accent 在 light / dark 下的按钮、选中导航、输入焦点和图表线条可辨识。
+- 桌面端侧栏：四种 accent 在 light / dark 下的按钮、选中导航、输入焦点和图表线条可辨识。
 - 移动端顶部：分体控件、弹层不溢出，颜色选项触摸目标不小于 44px。
 - 黑白灰日间：背景不为纯白，卡片和边框层级仍清楚。
 - 语义正负、警告和信息色在所有 accent 下保持原有含义。
@@ -136,7 +136,7 @@ npm test
 npm run build
 ```
 
-实现完成后启动本地应用，至少检查 Dashboard、Operation、History、Settings 四个页面在两种明暗和五种强调色下的可读性。
+实现完成后启动本地应用，至少检查 Dashboard、Operation、History、Settings 四个页面在两种明暗和四种强调色下的可读性。
 
 ## 非目标
 
