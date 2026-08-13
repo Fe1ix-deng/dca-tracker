@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.4.0 - 2026-08-13
+
+### Added
+- Added stock split and reverse-split event records with automatic historical price and share-basis recalculation.
+- Added four persistent accent palettes: classic indigo, warm orange, pine green, and monochrome.
+
+### Changed
+- Reduced the Dashboard to core market, profit, execution, and budget signals, and replaced the allocation chart with a compact table.
+- Added the next expected contribution date, consecutive execution count, and pause or missing-period status to the Dashboard.
+- Reworked the operation confirmation card into a clearer single-column decision, summary, note, and submission flow.
+- Improved theme and plan selector alignment, positioning, focus states, and mobile readability.
+
 ## 2.3.0 - 2026-07-24
 
 ### Added

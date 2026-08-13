@@ -4,6 +4,7 @@ import { CURRENT_RELEASE, shouldShowReleaseNotice } from '../utils/releaseNotice
 import { loadLastReadReleaseVersion, saveLastReadReleaseVersion } from '../utils/storage'
 
 const CONTRACT_DURATION_MS = 180
+const RELEASE_READ_EVENT = 'dca-tracker:release-read'
 
 export default function ReleaseNotice() {
   const bellRef = useRef(null)
@@ -36,6 +37,16 @@ export default function ReleaseNotice() {
     }
   }, [isOpen])
 
+  useEffect(() => {
+    const onReleaseRead = () => {
+      setIsOpen(false)
+      setIsAcknowledging(false)
+    }
+
+    window.addEventListener(RELEASE_READ_EVENT, onReleaseRead)
+    return () => window.removeEventListener(RELEASE_READ_EVENT, onReleaseRead)
+  }, [])
+
   const closePanel = () => {
     setIsOpen(false)
     bellRef.current?.focus()
@@ -46,6 +57,7 @@ export default function ReleaseNotice() {
     setIsAcknowledging(true)
 
     window.setTimeout(() => {
+      window.dispatchEvent(new Event(RELEASE_READ_EVENT))
       setIsOpen(false)
       setIsAcknowledging(false)
       bellRef.current?.focus()

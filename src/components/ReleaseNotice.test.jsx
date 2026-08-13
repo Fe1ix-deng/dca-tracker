@@ -9,15 +9,16 @@ describe('release notice interface', () => {
     expect(source).toContain('aria-label="查看版本更新"')
     expect(source).toContain('已读')
     expect(source).toContain('saveLastReadReleaseVersion(CURRENT_RELEASE.version)')
+    expect(source).toContain("window.dispatchEvent(new Event(RELEASE_READ_EVENT))")
   })
 
   it('uses Escape closing and a right-aligned unclipped panel', () => {
     expect(source).toContain("event.key === 'Escape'")
     expect(styles).toMatch(/\.release-notice-panel\s*\{[\s\S]*right:\s*0;/)
-    expect(styles).toMatch(/\.dashboard-overview-card\s*\{[\s\S]*overflow:\s*visible;/)
+    expect(styles).toMatch(/\.app-toolbar\s*\{[\s\S]*position:\s*fixed;/)
   })
 
   it('contracts vertically toward the bell without lateral drift', () => {
-    expect(styles).toMatch(/@keyframes release-notice-contract\s*\{[\s\S]*translateY\(-1\.9rem\) scale\(0\.18\)/)
+    expect(styles).toMatch(/@keyframes release-notice-contract\s*\{[\s\S]*translateY\(-3\.15rem\) scale\(0\.11\)/)
   })
 })

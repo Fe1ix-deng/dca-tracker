@@ -605,6 +605,7 @@ textarea:focus-visible {
     appearance: none;
     color-scheme: inherit;
     padding-right: 3rem;
+    width: 100%;
   }
 
   .shell-plan-select-wrap {
@@ -1033,6 +1034,89 @@ textarea:focus-visible {
     white-space: nowrap;
   }
 
+  .operation-commit-header {
+    align-items: flex-start;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    padding-right: 3.5rem;
+  }
+
+  .operation-commit-header > span {
+    flex-shrink: 0;
+  }
+
+  .operation-commit-summary {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: repeat(3, minmax(10rem, 1fr));
+  }
+
+  .operation-commit-summary-open {
+    grid-template-columns: repeat(2, minmax(10rem, 1fr));
+  }
+
+  .operation-commit-stat {
+    min-height: 6.25rem;
+  }
+
+  .operation-commit-value {
+    color: rgb(var(--color-text-rgb));
+    display: block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: clamp(1.25rem, 1.55vw, 1.55rem);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.08;
+    margin-top: 0.85rem;
+    max-width: 100%;
+    min-width: 0;
+    overflow: visible;
+    overflow-wrap: anywhere;
+    text-overflow: clip;
+    white-space: normal;
+  }
+
+  .operation-commit-note {
+    min-height: 5.75rem;
+  }
+
+  .operation-commit-footer {
+    align-items: center;
+    border-top: 1px solid rgb(var(--color-line-rgb) / 0.07);
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .operation-commit-message {
+    align-items: center;
+    color: rgb(var(--color-muted-foreground-rgb));
+    display: flex;
+    font-size: 0.875rem;
+    gap: 0.45rem;
+    line-height: 1.6;
+    margin: 0;
+    min-width: 0;
+  }
+
+  .operation-commit-message svg {
+    flex: 0 0 auto;
+  }
+
+  .operation-commit-message-ready {
+    color: rgb(var(--color-positive-rgb));
+  }
+
+  .operation-commit-message-warning {
+    color: rgb(var(--color-warning-rgb));
+  }
+
+  .operation-commit-action {
+    justify-self: end;
+    white-space: nowrap;
+    width: auto;
+  }
+
   .financial-input {
     @apply font-mono tabular-nums;
   }
@@ -1174,28 +1258,12 @@ textarea:focus-visible {
     display: grid;
     gap: 1.25rem;
     grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.4fr);
-    align-items: stretch;
+    align-items: start;
   }
 
   .dashboard-overview-main {
-    display: grid;
-    grid-template-rows: auto minmax(0, 1fr);
+    display: block;
     min-width: 0;
-  }
-
-  .dashboard-overview-matrix {
-    display: grid;
-    gap: 0.75rem;
-    grid-template-rows: repeat(2, minmax(0, 1fr));
-    margin-top: 1.25rem;
-    min-height: 0;
-  }
-
-  .dashboard-overview-meta {
-    display: grid;
-    gap: 0.75rem;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    min-height: 0;
   }
 
   .dashboard-snapshot-grid {
@@ -1205,17 +1273,12 @@ textarea:focus-visible {
     min-height: 0;
   }
 
-  .dashboard-meta-tile {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    min-height: 0;
-  }
-
   .dashboard-action-summary {
+    align-self: stretch;
     display: flex;
     flex-direction: column;
     height: auto;
+    justify-content: space-between;
     min-height: 0;
   }
 
@@ -1226,25 +1289,66 @@ textarea:focus-visible {
   }
 
   .dashboard-action-button {
-    margin-top: 1rem;
+    margin-top: 1.5rem;
   }
 
-  .dashboard-summary-divider {
-    border-top: 1px solid rgb(var(--color-line-rgb) / 0.07);
-    margin: 0.9rem 0;
+  .dashboard-execution-status {
+    min-height: 0;
   }
 
-  .dashboard-performance-grid {
+  .dashboard-execution-body {
     display: grid;
-    gap: 0.875rem;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: end;
+    gap: 1.25rem;
+    grid-template-columns: minmax(0, 1fr) minmax(14rem, 0.36fr);
   }
 
-  .dashboard-performance-tile {
+  .dashboard-execution-continuity {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    min-height: 6.6rem;
+    min-height: 4.4rem;
+  }
+
+  .dashboard-allocation-table {
+    min-width: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .dashboard-allocation-table-head,
+  .dashboard-allocation-table-row {
+    align-items: center;
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: minmax(7rem, 1.1fr) minmax(8rem, 1fr) minmax(5rem, 0.7fr) minmax(7rem, 0.8fr);
+    min-width: 28rem;
+  }
+
+  .dashboard-allocation-table-head {
+    border-top: 1px solid rgb(var(--color-line-rgb) / 0.07);
+    color: rgb(var(--color-muted-foreground-rgb));
+    font-size: 0.67rem;
+    letter-spacing: 0.16em;
+    padding: 0.8rem 0.5rem 0.65rem;
+    text-transform: uppercase;
+  }
+
+  .dashboard-allocation-table-row {
+    border-top: 1px solid rgb(var(--color-line-rgb) / 0.06);
+    font-size: 0.78rem;
+    padding: 0.8rem 0.5rem;
+  }
+
+  .dashboard-allocation-table-footer {
+    align-items: center;
+    border-top: 1px solid rgb(var(--color-line-rgb) / 0.07);
+    color: rgb(var(--color-muted-foreground-rgb));
+    display: flex;
+    font-size: 0.72rem;
+    gap: 1rem;
+    justify-content: space-between;
+    padding: 0.8rem 0.5rem 0;
   }
 
   .operation-input-grid {
@@ -1378,23 +1482,6 @@ textarea:focus-visible {
       font-size: clamp(1.08rem, 7vw, 1.35rem);
     }
 
-    .dashboard-trajectory-plot {
-      height: 16.5rem;
-      margin: 1rem 0 0;
-      min-height: 16.5rem;
-      width: 100%;
-    }
-
-    .dashboard-pie-frame {
-      height: 16rem;
-      min-height: 16rem;
-    }
-
-    .dashboard-funding-plot {
-      height: 15rem;
-      min-height: 15rem;
-    }
-
     .operation-footer-row {
       grid-template-columns: minmax(0, 1fr);
       row-gap: 0.75rem;
@@ -1408,6 +1495,29 @@ textarea:focus-visible {
     .operation-share-field {
       font-size: clamp(1.2rem, 8vw, 1.45rem);
       min-height: 3.8rem;
+    }
+
+    .operation-commit-header {
+      padding-right: 0;
+    }
+
+    .operation-commit-summary,
+    .operation-commit-summary-open {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .operation-commit-stat-last {
+      grid-column: auto;
+    }
+
+    .operation-commit-footer {
+      align-items: stretch;
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .operation-commit-action {
+      justify-self: stretch;
+      width: 100%;
     }
 
     .surface-table-head,
@@ -1430,19 +1540,11 @@ textarea:focus-visible {
 
   @media (max-width: 900px) {
     .dashboard-overview-layout,
-    .dashboard-overview-matrix,
-    .dashboard-overview-meta,
     .dashboard-snapshot-grid,
-    .dashboard-performance-grid {
+    .dashboard-execution-body {
       grid-template-columns: minmax(0, 1fr);
     }
 
-    .dashboard-overview-main,
-    .dashboard-overview-matrix {
-      grid-template-rows: auto;
-    }
-
-    .dashboard-meta-tile,
     .dashboard-metric-card {
       justify-content: flex-start;
       min-height: 7.75rem;
@@ -1454,6 +1556,29 @@ textarea:focus-visible {
 
     .operation-metrics-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .operation-commit-summary {
+      grid-template-columns: repeat(2, minmax(10rem, 1fr));
+    }
+
+    .operation-commit-summary-open {
+      grid-template-columns: repeat(2, minmax(10rem, 1fr));
+    }
+
+    .operation-commit-stat-last {
+      grid-column: 1 / -1;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .operation-commit-summary,
+    .operation-commit-summary-open {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .operation-commit-stat-last {
+      grid-column: auto;
     }
   }
 

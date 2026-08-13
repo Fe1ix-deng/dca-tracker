@@ -40,4 +40,8 @@ describe('global release notice placement', () => {
     expect(stylesSource).toMatch(/\.shell-plan select\s*\{[\s\S]*appearance:\s*none;/)
     expect(stylesSource).toMatch(/\.shell-plan-select-arrow\s*\{[\s\S]*right:\s*1rem;/)
   })
+
+  it('makes the custom plan arrow part of the select hit area', () => {
+    expect(stylesSource).toMatch(/\.shell-plan select\s*\{[^}]*width:\s*100%;/)
+  })
 })

@@ -426,87 +426,83 @@ export default function OperationPanel({ plan, records, onSaveRecord, onNavigate
         })}
       </div>
 
-      <div className="card p-5">
-        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.42fr)]">
+      <div className="card operation-commit-card p-5">
+        <div className="operation-commit-header">
           <div className="min-w-0">
             <p className="label">Decision & Commit</p>
             <h3 className="section-title">确认本期执行</h3>
             <p className="muted-copy mt-3">先标记本期执行决策，再补充备注，最后把整期记录写入历史。</p>
-
-            <div className="mt-5 grid gap-3 sm:grid-cols-3">
-              {decisionOptions.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => setTag(option.value)}
-                  className={getDecisionButtonClass(tag === option.value)}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-
-            <label className="mt-5 block space-y-2">
-              <span className="text-sm text-muted-foreground">备注</span>
-              <textarea
-                rows="4"
-                value={note}
-                placeholder="记录你这期的判断…"
-                onChange={(event) => setNote(event.target.value)}
-                className="surface-textarea"
-              />
-            </label>
           </div>
+          <span className={isReadyToConfirm ? 'badge-positive' : 'badge-neutral'} aria-live="polite">
+            {isReadyToConfirm ? 'Ready' : 'Pending'}
+          </span>
+        </div>
 
-          <aside className="subtle-panel h-fit p-4">
-            <div className="flex items-center justify-between gap-3">
-              <p className="mini-kicker">提交检查</p>
-              <span className={isReadyToConfirm ? 'badge-positive' : 'badge-neutral'}>
-                {isReadyToConfirm ? 'Ready' : 'Pending'}
-              </span>
-            </div>
-
-            <div className={`mt-4 grid gap-3 ${isOpenEnded ? '' : 'sm:grid-cols-3 xl:grid-cols-1'}`}>
-              <div className="surface-stat">
-                <p className="mini-kicker">本期实际投入</p>
-                <p className="mt-3 data-value text-xl">{formatMoney(totalActualAmount)}</p>
-              </div>
-              <div className="surface-stat">
-                <p className="mini-kicker">累计投入</p>
-                <p className="mt-3 data-value text-xl">{formatMoney(cumulativeInvested)}</p>
-              </div>
-              {!isOpenEnded ? (
-                <div className="surface-stat">
-                  <p className="mini-kicker">剩余可投</p>
-                  <p className="mt-3 data-value text-xl">{formatMoney(remainingBudget)}</p>
-                </div>
-              ) : null}
-            </div>
-
-            {isPlanComplete ? (
-              <p className="mt-4 rounded-md border border-warning/25 bg-warning/10 px-3 py-2 text-sm leading-6 text-warning">
-                固定期数计划已完成。如需继续执行，请先到设置页增加总期数或填写新计划。
-              </p>
-            ) : !isReadyToConfirm ? (
-              <p className="mt-4 rounded-md border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-sm leading-6 text-muted-foreground">
-                先为全部标的填入价格，并等待自动获取完成后，再确认写入历史。
-              </p>
-            ) : (
-              <p className="mt-4 rounded-md border border-positive/25 bg-positive/10 px-3 py-2 text-sm leading-6 text-positive">
-                <CheckCircle2 size={15} className="mr-1 inline" />
-                所有价格已就绪，可以写入历史。
-              </p>
-            )}
-
+        <div className="mt-5 grid gap-3 sm:grid-cols-3">
+          {decisionOptions.map((option) => (
             <button
+              key={option.value}
               type="button"
-              onClick={handleConfirm}
-              disabled={!isReadyToConfirm}
-              className="control-button-primary mt-5 w-full"
+              onClick={() => setTag(option.value)}
+              className={getDecisionButtonClass(tag === option.value)}
             >
-              确认记录本期操作
+              {option.label}
             </button>
-          </aside>
+          ))}
+        </div>
+
+        <div className={`operation-commit-summary mt-5 ${isOpenEnded ? 'operation-commit-summary-open' : ''}`}>
+          <div className="surface-stat operation-commit-stat">
+            <p className="mini-kicker">本期实际投入</p>
+            <p className="operation-commit-value">{formatMoney(totalActualAmount)}</p>
+          </div>
+          <div className="surface-stat operation-commit-stat">
+            <p className="mini-kicker">累计投入</p>
+            <p className="operation-commit-value">{formatMoney(cumulativeInvested)}</p>
+          </div>
+          {!isOpenEnded ? (
+            <div className="surface-stat operation-commit-stat operation-commit-stat-last">
+              <p className="mini-kicker">剩余可投</p>
+              <p className="operation-commit-value">{formatMoney(remainingBudget)}</p>
+            </div>
+          ) : null}
+        </div>
+
+        <label className="mt-5 block space-y-2">
+          <span className="text-sm text-muted-foreground">备注</span>
+          <textarea
+            rows="3"
+            value={note}
+            placeholder="记录你这期的判断…"
+            onChange={(event) => setNote(event.target.value)}
+            className="surface-textarea operation-commit-note"
+          />
+        </label>
+
+        <div className="operation-commit-footer mt-5 pt-4">
+          {isPlanComplete ? (
+            <p className="operation-commit-message operation-commit-message-warning">
+              固定期数计划已完成。如需继续执行，请先到设置页增加总期数或填写新计划。
+            </p>
+          ) : !isReadyToConfirm ? (
+            <p className="operation-commit-message">
+              先为全部标的填入价格，并等待自动获取完成后，再确认写入历史。
+            </p>
+          ) : (
+            <p className="operation-commit-message operation-commit-message-ready">
+              <CheckCircle2 size={15} />
+              所有价格已就绪，可以写入历史。
+            </p>
+          )}
+
+          <button
+            type="button"
+            onClick={handleConfirm}
+            disabled={!isReadyToConfirm}
+            className="control-button-primary operation-commit-action"
+          >
+            确认记录本期操作
+          </button>
         </div>
       </div>
     </section>
