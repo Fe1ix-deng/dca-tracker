@@ -42,17 +42,20 @@ function PlanSelector({ plans, activePlanId, onChangeActivePlan, compact = false
   return (
     <label className={compact ? 'shell-plan shell-plan-compact' : 'shell-plan'}>
       <span>当前计划</span>
-      <select
-        aria-label="切换当前计划"
-        value={activePlanId}
-        onChange={(event) => onChangeActivePlan?.(event.target.value)}
-      >
-        {plans.map((plan) => (
-          <option key={plan.id} value={plan.id}>
-            {plan.name || '未命名计划'}
-          </option>
-        ))}
-      </select>
+      <div className="shell-plan-select-wrap">
+        <select
+          aria-label="切换当前计划"
+          value={activePlanId}
+          onChange={(event) => onChangeActivePlan?.(event.target.value)}
+        >
+          {plans.map((plan) => (
+            <option key={plan.id} value={plan.id}>
+              {plan.name || '未命名计划'}
+            </option>
+          ))}
+        </select>
+        <ChevronDown className="shell-plan-select-arrow" size={18} aria-hidden="true" />
+      </div>
     </label>
   )
 }

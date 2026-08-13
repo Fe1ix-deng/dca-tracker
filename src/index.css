@@ -620,7 +620,22 @@ textarea:focus-visible {
 
   .shell-plan select {
     @apply min-w-0 rounded-lg border border-line/[0.08] bg-panel px-3 py-2.5 text-sm text-white outline-none transition;
+    appearance: none;
     color-scheme: inherit;
+    padding-right: 3rem;
+  }
+
+  .shell-plan-select-wrap {
+    position: relative;
+  }
+
+  .shell-plan-select-arrow {
+    color: rgb(var(--color-text-rgb));
+    pointer-events: none;
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
   }
 
   .shell-plan select:focus {
@@ -645,6 +660,19 @@ textarea:focus-visible {
     border-color: rgb(var(--color-line-rgb) / 0.08);
     background: rgb(var(--color-panel-rgb) / 0.72);
     color: rgb(var(--color-text-rgb));
+    position: relative;
+  }
+
+  .theme-control .theme-toggle:not(.theme-toggle-compact) > span {
+    left: 50%;
+    position: absolute;
+    transform: translateX(-50%);
+    white-space: nowrap;
+  }
+
+  .theme-control .theme-toggle:not(.theme-toggle-compact) > svg {
+    left: calc(50% - 3.75rem);
+    position: absolute;
   }
 
   .theme-toggle:hover {
