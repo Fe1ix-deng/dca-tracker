@@ -3,6 +3,22 @@ function positiveNumber(value) {
   return Number.isFinite(numeric) && numeric > 0 ? numeric : 0
 }
 
+export function getLastRecordedPrices(records) {
+  const prices = {}
+
+  ;(Array.isArray(records) ? records : []).forEach((record) => {
+    ;(Array.isArray(record?.assets) ? record.assets : []).forEach((asset) => {
+      const ticker = String(asset?.ticker || '').trim().toUpperCase()
+      const price = positiveNumber(asset?.price)
+      if (ticker && price > 0) {
+        prices[ticker] = price
+      }
+    })
+  })
+
+  return prices
+}
+
 export function resolveMarketPrices(assets, recordedPrices, quotes) {
   return Object.fromEntries((Array.isArray(assets) ? assets : []).map((asset) => {
     const ticker = String(typeof asset === 'string' ? asset : asset?.ticker || '').trim().toUpperCase()

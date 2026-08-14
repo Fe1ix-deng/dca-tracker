@@ -1,12 +1,12 @@
-import { Suspense, lazy, useMemo, useState } from 'react'
+import { Suspense, lazy, useEffect, useMemo, useState } from 'react'
 import Layout from './components/Layout'
 import { getPeriodicAmount, getSuggestedShares as getDcaSuggestedShares } from './utils/dcaCalc'
-import { calcAllTargets, getRequiredInvestment, getSuggestedShares as getVaSuggestedShares } from './utils/vaCalc'
+import { calcAllTargets, getRequiredInvestment, getSuggestedShares as getVaSuggestedShares, getTrackedShares } from './utils/vaCalc'
 import { usePlan } from './hooks/usePlan'
 import { useRecords } from './hooks/useRecords'
 import useTheme from './hooks/useTheme'
 import { clearAll, getBackupStatus, markBackedUp, markDataChanged } from './utils/storage'
-import { getRemainingDeployableBudget } from './utils/budget'
+import { getBudgetLimitedShares, getRemainingDeployableBudget } from './utils/budget'
 import { downloadBackupJson } from './utils/backup'
 import { adjustAssetForSplit, adjustHoldingForSplit, getSplitFactor, getSplitFactorBetween, normalizeSplitEvents } from './utils/stockSplits'
 
@@ -136,21 +136,37 @@ export function rebuildPlanState(plan, records, sourceRecords = records) {
     })
     holdingBasisDate = recordDate || holdingBasisDate
 
+    let suggestedBudgetReserved = 0
     const nextAssets = normalizedRecord.assets.map((asset) => {
       const planAssetIndex = plan.assets.findIndex((item) => item.ticker === asset.ticker)
       const planAsset = plan.assets[planAssetIndex]
       const previousShares = Number(assetSharesMap.get(asset.ticker)) || 0
       const price = roundToTwo(asset.price)
-      const currentValueBefore = roundToTwo(previousShares * price)
+      const initialShares = Number(initialSharesMap.get(asset.ticker)) || 0
+      const initialSharesAtRecord = roundToTwo(
+        initialShares * getSplitFactorBetween(asset.ticker, planBasisDate, recordDate, splitEvents),
+      )
+      const trackedShares = plan.strategy === 'VA'
+        ? getTrackedShares(previousShares, initialSharesAtRecord)
+        : previousShares
+      const currentValueBefore = roundToTwo(trackedShares * price)
+      const totalCurrentValueBefore = roundToTwo(previousShares * price)
       const targetValue = plan.strategy === 'VA'
         ? roundToTwo(Number(targetMatrix?.[index]?.[planAssetIndex] || 0))
         : roundToTwo(getPeriodicAmount(plan, planAsset?.weight))
       const requiredAmount = plan.strategy === 'VA'
         ? getRequiredInvestment(currentValueBefore, targetValue)
         : roundToTwo(getPeriodicAmount(plan, planAsset?.weight))
-      const suggestedShares = plan.strategy === 'VA'
+      const rawSuggestedShares = plan.strategy === 'VA'
         ? getVaSuggestedShares(requiredAmount, price)
         : getDcaSuggestedShares(requiredAmount, price)
+      const suggestedShares = getBudgetLimitedShares(
+        rawSuggestedShares,
+        price,
+        plan,
+        cumulativeInvested + suggestedBudgetReserved,
+      )
+      suggestedBudgetReserved = roundToTwo(suggestedBudgetReserved + suggestedShares * price)
       const actualShares = Number(asset.actualShares) || 0
       const actualAmount = roundToTwo(actualShares * price)
       const splitFactor = getSplitFactor(asset.ticker, recordDate, splitEvents, asOfDate)
@@ -162,6 +178,8 @@ export function rebuildPlanState(plan, records, sourceRecords = records) {
       return {
         ...asset,
         price,
+        totalCurrentValueBefore,
+        trackedShares,
         currentValueBefore,
         targetValue,
         requiredAmount,
@@ -177,7 +195,7 @@ export function rebuildPlanState(plan, records, sourceRecords = records) {
 
     const totalActualAmount = roundToTwo(nextAssets.reduce((sum, asset) => sum + (Number(asset.actualAmount) || 0), 0))
     cumulativeInvested = roundToTwo(cumulativeInvested + totalActualAmount)
-    const remainingBudget = getRemainingDeployableBudget(plan, cumulativeInvested)
+    const remainingBudget = Math.max(0, getRemainingDeployableBudget(plan, cumulativeInvested))
 
     return {
       ...normalizedRecord,
@@ -215,6 +233,11 @@ export function rebuildPlanState(plan, records, sourceRecords = records) {
   }
 }
 
+export function stateNeedsRebuild(plan, records) {
+  const { nextPlan, nextRecords } = rebuildPlanState(plan, records)
+  return JSON.stringify(nextPlan) !== JSON.stringify(plan) || JSON.stringify(nextRecords) !== JSON.stringify(records)
+}
+
 function rebuildStateAfterRecordDeletion(plan, records, recordId) {
   const remainingRecords = (Array.isArray(records) ? records : []).filter((record) => record.id !== recordId)
   return rebuildPlanState(plan, remainingRecords, records)
@@ -238,6 +261,16 @@ export default function App() {
   // backupPing forces a refresh after an export, since exporting doesn't
   // otherwise change `plan` or `records` and would leave a stale reminder.
   const backupStatus = useMemo(() => getBackupStatus(), [plan, records, backupPing])
+
+  useEffect(() => {
+    if (!plan || !stateNeedsRebuild(plan, records)) {
+      return
+    }
+
+    const { nextPlan, nextRecords } = rebuildPlanState(plan, records)
+    replaceRecords(nextRecords)
+    replacePlan(nextPlan)
+  }, [plan, records, replacePlan, replaceRecords])
 
   const handleSavePlan = (nextPlan) => {
     const { nextPlan: rebuiltPlan, nextRecords } = rebuildPlanState(nextPlan, records)

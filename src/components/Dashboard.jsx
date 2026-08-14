@@ -2,8 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ArrowRight, RefreshCcw } from 'lucide-react'
 import { getDeployableBudget, getRemainingDeployableBudget } from '../utils/budget'
 import { fetchMarketQuotes } from '../services/marketQuotes'
-import { getQuoteDisplayState, resolveMarketPrices } from '../utils/marketSnapshot'
+import { getLastRecordedPrices, getQuoteDisplayState, resolveMarketPrices } from '../utils/marketSnapshot'
 import { formatScheduleDate, getNextContributionDate } from '../utils/contributionSchedule'
+import { calculatePortfolioCostBasis } from '../utils/portfolioCost'
 
 function formatMoney(value) {
   return new Intl.NumberFormat('en-US', {
@@ -145,7 +146,7 @@ export default function Dashboard({ plan, records, onNavigate }) {
   const strategyLabel = plan.strategy === 'VA' ? 'VA 定投' : 'DCA 定投'
   const frequencyLabel = plan.frequency === 'biweekly' ? '双周' : '每月'
   const latestPeriodAmount = Number(latestRecord.totalActualAmount) || 0
-  const recordedPriceMap = Object.fromEntries(latestRecord.assets.map((asset) => [asset.ticker, Number(asset.price) || 0]))
+  const recordedPriceMap = getLastRecordedPrices(planRecords)
   const marketPriceMap = resolveMarketPrices(plan.assets, recordedPriceMap, quoteSnapshot.quotes)
   const latestPriceMap = Object.fromEntries(Object.entries(marketPriceMap).map(([ticker, quote]) => [ticker, quote.price]))
   const quoteDisplayState = getQuoteDisplayState({
@@ -158,9 +159,10 @@ export default function Dashboard({ plan, records, onNavigate }) {
     (sum, asset) => sum + (Number(asset.currentShares) || 0) * (latestPriceMap[asset.ticker] || 0),
     0,
   )
+  const { costBasis, hasKnownCost } = calculatePortfolioCostBasis(plan.assets, planRecords)
+  const floatingProfit = hasKnownCost ? marketValue - costBasis : null
+  const floatingProfitPct = hasKnownCost && costBasis > 0 ? (floatingProfit / costBasis) * 100 : null
   const totalInvested = Number(latestRecord.cumulativeInvested) || 0
-  const floatingProfit = marketValue - totalInvested
-  const floatingProfitPct = totalInvested > 0 ? (floatingProfit / totalInvested) * 100 : 0
   const totalBudget = Number(plan.totalBudget) || 0
   const deployableBudget = getDeployableBudget(plan)
   const remainingBudget = Math.max(0, getRemainingDeployableBudget(plan, totalInvested))
@@ -169,8 +171,10 @@ export default function Dashboard({ plan, records, onNavigate }) {
   const totalPeriods = Math.max(1, Number(plan.totalPeriods) || 1)
   const completedPeriods = planRecords.length
   const nextPeriodNumber = completedPeriods + 1
+  const latestExecutionDate = latestRecord?.date || ''
   const nextContributionDate = formatScheduleDate(getNextContributionDate({
     createdAt: plan.createdAt,
+    latestExecutionDate,
     frequency: plan.frequency,
     completedPeriods,
   }))
@@ -218,9 +222,9 @@ export default function Dashboard({ plan, records, onNavigate }) {
     },
     {
       label: '浮动盈亏',
-      value: formatSignedMoney(floatingProfit),
-      detail: `${getProfitLabel(floatingProfit)} ${formatPercent(floatingProfitPct)}。`,
-      tone: floatingProfit >= 0 ? 'text-positive' : 'text-negative',
+      value: hasKnownCost ? formatSignedMoney(floatingProfit) : '--',
+      detail: hasKnownCost ? `${getProfitLabel(floatingProfit)} ${formatPercent(floatingProfitPct)}。` : '请补充已有持仓成本。',
+      tone: hasKnownCost ? floatingProfit >= 0 ? 'text-positive' : 'text-negative' : 'text-muted-foreground',
     },
     {
       label: '执行进度',

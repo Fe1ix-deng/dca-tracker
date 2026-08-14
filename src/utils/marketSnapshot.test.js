@@ -1,7 +1,21 @@
 import { describe, expect, it } from 'vitest'
-import { getQuoteDisplayState, resolveMarketPrices } from './marketSnapshot'
+import { getLastRecordedPrices, getQuoteDisplayState, resolveMarketPrices } from './marketSnapshot'
 
 describe('resolveMarketPrices', () => {
+  it('keeps the latest valid historical price for each ticker', () => {
+    expect(getLastRecordedPrices([
+      { assets: [{ ticker: 'QLD', price: 90 }, { ticker: 'IBIT', price: 36 }] },
+      { assets: [{ ticker: 'QLD', price: 92 }] },
+    ])).toEqual({ QLD: 92, IBIT: 36 })
+  })
+
+  it('ignores invalid historical prices while preserving earlier valid values', () => {
+    expect(getLastRecordedPrices([
+      { assets: [{ ticker: 'QLD', price: 90 }] },
+      { assets: [{ ticker: 'QLD', price: 0 }] },
+    ])).toEqual({ QLD: 90 })
+  })
+
   it('uses a valid quote over the last execution price without mutating the recorded price map', () => {
     const recordedPrices = { QLD: 90, IBIT: 36 }
 

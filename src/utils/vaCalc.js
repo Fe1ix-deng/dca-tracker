@@ -5,7 +5,7 @@ function roundToTwo(value) {
 }
 
 function getPeriodsPerYear(frequency = 'monthly') {
-  return frequency === 'biweekly' ? 24 : 12
+  return frequency === 'biweekly' ? 26 : 12
 }
 
 function isOpenEndedPlan(plan = {}) {
@@ -13,7 +13,8 @@ function isOpenEndedPlan(plan = {}) {
 }
 
 function getPeriodicGrowthRate(plan = {}) {
-  return (Number(plan.targetAnnualReturn) || 0) / getPeriodsPerYear(plan.frequency)
+  const annualReturn = Number(plan.targetAnnualReturn) || 0
+  return Math.pow(1 + annualReturn, 1 / getPeriodsPerYear(plan.frequency)) - 1
 }
 
 function getAssetPeriodicContribution(assetWeight, plan = {}) {
@@ -79,6 +80,12 @@ export function getSuggestedShares(requiredAmount, currentPrice) {
 export function getUpdatedShares(previousShares, actualSharesBought) {
   return roundToTwo((Number(previousShares) || 0) + (Number(actualSharesBought) || 0))
 }
+
+export function getTrackedShares(currentShares, initialShares) {
+  return roundToTwo(Math.max(0, (Number(currentShares) || 0) - (Number(initialShares) || 0)))
+}
+
+export { getPeriodicGrowthRate }
 
 export function calcAllTargets(plan = {}) {
   const assets = Array.isArray(plan.assets) ? plan.assets : []

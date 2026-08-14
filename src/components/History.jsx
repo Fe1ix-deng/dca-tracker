@@ -634,8 +634,11 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
 
                           <div className="mt-4 grid gap-3 md:grid-cols-4">
                             <div className="surface-stat">
-                              <p className="mini-kicker">前持仓价值</p>
+                              <p className="mini-kicker">{asset.totalCurrentValueBefore !== undefined ? '计划内持仓价值' : '前持仓价值'}</p>
                               <p className="mt-3 data-value text-base">{formatMoney(asset.currentValueBefore)}</p>
+                              {asset.totalCurrentValueBefore !== undefined ? (
+                                <p className="mt-2 text-xs text-muted-foreground">全部持仓价值 {formatMoney(asset.totalCurrentValueBefore)}</p>
+                              ) : null}
                             </div>
                             <div className="surface-stat">
                               <p className="mini-kicker">建议买入</p>

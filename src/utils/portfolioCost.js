@@ -54,6 +54,18 @@ export function calculateAverageCost(asset, records = []) {
     }
   }
 
+  if (initialShares <= 0 && recordedPosition.shares <= 0) {
+    return {
+      shares: currentShares,
+      initialShares,
+      initialAverageCost,
+      recordedShares: recordedPosition.shares,
+      recordedCost: recordedPosition.cost,
+      averageCost: null,
+      hasKnownCost: false,
+    }
+  }
+
   const initialCost = initialShares * initialAverageCost
   const totalCost = initialCost + recordedPosition.cost
 
@@ -77,4 +89,16 @@ export function calculatePriceGapPct(latestPrice, averageCost) {
   }
 
   return ((price - cost) / cost) * 100
+}
+
+export function calculatePortfolioCostBasis(assets = [], records = []) {
+  const summaries = (Array.isArray(assets) ? assets : []).map((asset) => calculateAverageCost(asset, records))
+  const hasKnownCost = summaries.every((summary) => summary.hasKnownCost)
+
+  return {
+    costBasis: hasKnownCost
+      ? Number(summaries.reduce((total, summary) => total + summary.averageCost * summary.shares, 0).toFixed(2))
+      : null,
+    hasKnownCost,
+  }
 }

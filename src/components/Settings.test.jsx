@@ -1,8 +1,24 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { getSavedReserveRatio, validateSplitEventDraft } from './Settings'
+import { getSavedReserveRatio, normalizeFormPlan, validateSplitEventDraft } from './Settings'
 
 describe('Settings helpers', () => {
+  it('uses original baseline holdings as the editable settings values after buys', () => {
+    const form = normalizeFormPlan({
+      assets: [{
+        ticker: 'QLD',
+        currentShares: 257.14,
+        initialShares: 251.14,
+        initialSharesOriginal: 251.14,
+        initialAverageCost: 77.62,
+        initialAverageCostOriginal: 77.62,
+      }],
+    })
+
+    expect(form.assets[0].currentShares).toBe('251.14')
+    expect(form.assets[0].initialAverageCost).toBe('77.62')
+  })
+
   it('aligns the asset-weight status text and value on a shared baseline', () => {
     const stylesheet = readFileSync(new URL('../index.css', import.meta.url), 'utf8')
 

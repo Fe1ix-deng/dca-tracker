@@ -7,10 +7,11 @@ import {
   getInitialTargetValue,
   getRequiredInvestment,
   getSuggestedShares as getVaSuggestedShares,
+  getTrackedShares,
   getUpdatedShares,
 } from '../utils/vaCalc'
 import { fetchQuote } from '../hooks/useQuote'
-import { getRemainingDeployableBudget } from '../utils/budget'
+import { getBudgetLimitedShares, getRemainingDeployableBudget } from '../utils/budget'
 
 const decisionOptions = [
   { value: 'normal', label: '正常执行' },
@@ -93,6 +94,10 @@ export default function OperationPanel({ plan, records, onSaveRecord, onNavigate
     ? rawCurrentPeriod
     : Math.min(rawCurrentPeriod, totalPeriods - 1)
   const latestRecord = records.find((record) => record.planId === plan.id && record.periodIndex === rawCurrentPeriod - 1)
+  const historicalInvested = records
+    .filter((record) => record.planId === plan.id)
+    .reduce((sum, record) => sum + (Number(record.totalActualAmount) || 0), 0)
+  let suggestedBudgetReserved = 0
 
   const currentAssets = plan.assets.map((asset, index) => {
     const state = assetStates.find((item) => item.ticker === asset.ticker) || {
@@ -105,7 +110,12 @@ export default function OperationPanel({ plan, records, onSaveRecord, onNavigate
     }
 
     const price = toNumberOrFallback(state.price, 0)
-    const currentValueBefore = roundToTwo((Number(asset.currentShares) || 0) * price)
+    const totalCurrentValueBefore = roundToTwo((Number(asset.currentShares) || 0) * price)
+    const initialShares = Number(asset.initialShares ?? asset.currentShares) || 0
+    const trackedShares = plan.strategy === 'VA'
+      ? getTrackedShares(asset.currentShares, initialShares)
+      : Number(asset.currentShares) || 0
+    const currentValueBefore = roundToTwo(trackedShares * price)
     const targetValue = plan.strategy === 'VA'
       ? currentPeriod === 0
         ? getInitialTargetValue(asset.weight, plan)
@@ -116,9 +126,16 @@ export default function OperationPanel({ plan, records, onSaveRecord, onNavigate
         ? roundToTwo(targetValue)
         : getRequiredInvestment(currentValueBefore, targetValue)
       : getPeriodicAmount(plan, asset.weight)
-    const suggestedShares = plan.strategy === 'VA'
+    const rawSuggestedShares = plan.strategy === 'VA'
       ? getVaSuggestedShares(requiredAmount, price)
       : getDcaSuggestedShares(requiredAmount, price)
+    const suggestedShares = getBudgetLimitedShares(
+      rawSuggestedShares,
+      price,
+      plan,
+      historicalInvested + suggestedBudgetReserved,
+    )
+    suggestedBudgetReserved = roundToTwo(suggestedBudgetReserved + suggestedShares * price)
     const hasManualActualShares = state.actualShares !== null && state.actualShares !== undefined
     const actualShares = getActualSharesForDecision({
       tag,
@@ -131,6 +148,8 @@ export default function OperationPanel({ plan, records, onSaveRecord, onNavigate
     return {
       ...asset,
       ...state,
+      totalCurrentValueBefore,
+      trackedShares,
       currentValueBefore,
       targetValue: roundToTwo(targetValue),
       requiredAmount: roundToTwo(requiredAmount),
@@ -145,13 +164,15 @@ export default function OperationPanel({ plan, records, onSaveRecord, onNavigate
   })
 
   const totalActualAmount = roundToTwo(currentAssets.reduce((sum, asset) => sum + asset.actualAmount, 0))
-  const historicalInvested = records
-    .filter((record) => record.planId === plan.id)
-    .reduce((sum, record) => sum + (Number(record.totalActualAmount) || 0), 0)
+  const remainingBudgetBefore = Math.max(0, getRemainingDeployableBudget(plan, historicalInvested))
   const cumulativeInvested = roundToTwo(historicalInvested + totalActualAmount)
-  const remainingBudget = getRemainingDeployableBudget(plan, cumulativeInvested)
+  const remainingBudget = Math.max(0, getRemainingDeployableBudget(plan, cumulativeInvested))
   const pricingReadyCount = currentAssets.filter((asset) => !asset.loading && toNumberOrFallback(asset.price, 0) > 0).length
-  const isReadyToConfirm = !isPlanComplete && currentAssets.length > 0 && currentAssets.every((asset) => !asset.loading && toNumberOrFallback(asset.price, 0) > 0)
+  const isWithinBudget = isOpenEnded || totalActualAmount <= remainingBudgetBefore
+  const isReadyToConfirm = !isPlanComplete
+    && currentAssets.length > 0
+    && currentAssets.every((asset) => !asset.loading && toNumberOrFallback(asset.price, 0) > 0)
+    && isWithinBudget
 
   const updateAssetState = (ticker, patch) => {
     setAssetStates((current) =>
@@ -185,6 +206,10 @@ export default function OperationPanel({ plan, records, onSaveRecord, onNavigate
       return
     }
 
+    if (!isOpenEnded && totalActualAmount > remainingBudgetBefore) {
+      return
+    }
+
     const record = {
       id: `record-${Date.now()}`,
       planId: plan.id,
@@ -200,6 +225,7 @@ export default function OperationPanel({ plan, records, onSaveRecord, onNavigate
         suggestedShares: asset.suggestedShares,
         actualShares: asset.actualShares,
         actualAmount: asset.actualAmount,
+        totalCurrentValueBefore: asset.totalCurrentValueBefore,
       })),
       tag,
       note,
@@ -399,8 +425,11 @@ export default function OperationPanel({ plan, records, onSaveRecord, onNavigate
 
               <div className="operation-metrics-grid mt-5">
                 <div className="operation-metric-card p-4">
-                  <p className="operation-metric-label">当前持仓价值</p>
+                  <p className="operation-metric-label">{plan.strategy === 'VA' ? '计划内持仓价值' : '当前持仓价值'}</p>
                   <p className="operation-metric-value">{formatMoney(asset.currentValueBefore)}</p>
+                  {plan.strategy === 'VA' ? (
+                    <p className="mt-3 text-xs text-muted-foreground">全部持仓价值 {formatMoney(asset.totalCurrentValueBefore)}</p>
+                  ) : null}
                 </div>
 
                 <div className="operation-metric-card p-4">
@@ -483,6 +512,10 @@ export default function OperationPanel({ plan, records, onSaveRecord, onNavigate
           {isPlanComplete ? (
             <p className="operation-commit-message operation-commit-message-warning">
               固定期数计划已完成。如需继续执行，请先到设置页增加总期数或填写新计划。
+            </p>
+          ) : !isWithinBudget ? (
+            <p className="operation-commit-message operation-commit-message-warning">
+              本期实际投入不能超过剩余预算 {formatMoney(remainingBudgetBefore)}。
             </p>
           ) : !isReadyToConfirm ? (
             <p className="operation-commit-message">

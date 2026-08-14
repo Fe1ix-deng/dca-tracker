@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { calculateAverageCost, calculatePriceGapPct } from './portfolioCost'
+import { calculateAverageCost, calculatePortfolioCostBasis, calculatePriceGapPct } from './portfolioCost'
 
 describe('portfolio cost helpers', () => {
   it('calculates full-position average cost with initial holdings and recorded buys', () => {
@@ -100,5 +100,49 @@ describe('portfolio cost helpers', () => {
     expect(result.recordedShares).toBe(4)
     expect(result.recordedCost).toBe(200)
     expect(result.averageCost).toBeCloseTo(41.67, 2)
+  })
+
+  it('includes initial holdings and recorded buys in the portfolio cost basis', () => {
+    const result = calculatePortfolioCostBasis([{
+      ticker: 'QLD',
+      currentShares: 257.14,
+      initialShares: 251.14,
+      initialAverageCost: 77.62,
+    }], [{
+      assets: [{ ticker: 'QLD', actualShares: 6, actualAmount: 490.8 }],
+    }])
+
+    expect(result).toEqual({
+      costBasis: 19984.29,
+      hasKnownCost: true,
+    })
+  })
+
+  it('does not fall back to historical contributions when an initial cost is unknown', () => {
+    const result = calculatePortfolioCostBasis([{
+      ticker: 'QLD',
+      currentShares: 257.14,
+      initialShares: 251.14,
+      initialAverageCost: 0,
+    }], [{
+      assets: [{ ticker: 'QLD', actualShares: 6, actualAmount: 490.8 }],
+    }])
+
+    expect(result).toEqual({
+      costBasis: null,
+      hasKnownCost: false,
+    })
+  })
+
+  it('marks an unpriced existing position as unknown cost', () => {
+    const result = calculateAverageCost({
+      ticker: 'QLD',
+      currentShares: 10,
+      initialShares: 0,
+      initialAverageCost: 0,
+    }, [])
+
+    expect(result.hasKnownCost).toBe(false)
+    expect(result.averageCost).toBeNull()
   })
 })

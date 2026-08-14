@@ -29,4 +29,13 @@ describe('contribution schedule helpers', () => {
     expect(formatScheduleDate('')).toBe('待设置')
     expect(getNextContributionDate({ frequency: 'monthly', completedPeriods: 1 })).toBe('')
   })
+
+  it('uses the latest actual execution date as the next schedule anchor', () => {
+    expect(getNextContributionDate({
+      createdAt: '2026-07-01T09:30:00.000Z',
+      latestExecutionDate: '2026-07-30T09:30:00.000Z',
+      frequency: 'biweekly',
+      completedPeriods: 1,
+    })).toBe('2026-08-13')
+  })
 })

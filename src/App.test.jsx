@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { rebuildPlanState } from './App'
+import { rebuildPlanState, stateNeedsRebuild } from './App'
 
 describe('rebuildPlanState', () => {
   const plan = {
@@ -56,6 +56,18 @@ describe('rebuildPlanState', () => {
     totalActualAmount: 100,
   }
 
+  it('detects stale derived state and becomes stable after rebuilding', () => {
+    const stalePlan = {
+      ...plan,
+      currentPeriod: 1,
+      assets: [{ ...plan.assets[0], currentShares: 12, initialShares: 10 }],
+    }
+    const { nextPlan, nextRecords } = rebuildPlanState(stalePlan, [firstRecord])
+
+    expect(stateNeedsRebuild(stalePlan, [firstRecord])).toBe(true)
+    expect(stateNeedsRebuild(nextPlan, nextRecords)).toBe(false)
+  })
+
   it('preserves initial holdings when rebuilding after record deletion', () => {
     const { nextPlan, nextRecords } = rebuildPlanState(plan, [firstRecord], [firstRecord, secondRecord])
 
@@ -82,6 +94,84 @@ describe('rebuildPlanState', () => {
     const { nextRecords } = rebuildPlanState(updatedPlan, [staleRecord])
 
     expect(nextRecords[0].remainingBudget).toBe(15800)
+  })
+
+  it('stores VA history with tracked and total pre-buy values', () => {
+    const vaPlan = {
+      ...plan,
+      strategy: 'VA',
+      totalBudget: 5500,
+      reserveRatio: 0,
+      totalPeriods: 12,
+      initialShares: 251.14,
+      assets: [{
+        ...plan.assets[0],
+        currentShares: 257.14,
+        initialShares: 251.14,
+      }],
+    }
+    const record = {
+      ...firstRecord,
+      assets: [{ ...firstRecord.assets[0], price: 81.8, actualShares: 6, actualAmount: 490.8 }],
+    }
+
+    const { nextRecords } = rebuildPlanState(vaPlan, [record])
+
+    expect(nextRecords[0].assets[0].currentValueBefore).toBe(0)
+    expect(nextRecords[0].assets[0].totalCurrentValueBefore).toBeCloseTo(20543.25, 2)
+    expect(nextRecords[0].assets[0].requiredAmount).toBe(458.33)
+    expect(nextRecords[0].assets[0].suggestedShares).toBe(6)
+  })
+
+  it('keeps user-entered baseline holdings and cost separate from accumulated shares', () => {
+    const vaPlan = {
+      ...plan,
+      strategy: 'VA',
+      assets: [{
+        ...plan.assets[0],
+        currentShares: 257.14,
+        initialShares: 251.14,
+        initialSharesOriginal: 251.14,
+        initialAverageCost: 77.62,
+        initialAverageCostOriginal: 77.62,
+      }],
+    }
+    const record = {
+      ...firstRecord,
+      assets: [{ ...firstRecord.assets[0], actualShares: 6, actualAmount: 490.8 }],
+    }
+
+    const { nextPlan } = rebuildPlanState(vaPlan, [record])
+    const asset = nextPlan.assets[0]
+
+    expect(asset.initialSharesOriginal).toBe(251.14)
+    expect(asset.initialAverageCostOriginal).toBe(77.62)
+    expect(asset.currentShares).toBe(257.14)
+  })
+
+  it('shares the fixed-plan budget cap across multiple historical assets', () => {
+    const multiAssetPlan = {
+      ...plan,
+      strategy: 'DCA',
+      totalBudget: 100,
+      reserveRatio: 0,
+      totalPeriods: 1,
+      assets: [
+        { ticker: 'QLD', weight: 0.5, currentShares: 0 },
+        { ticker: 'IBIT', weight: 0.5, currentShares: 0 },
+      ],
+    }
+    const record = {
+      ...firstRecord,
+      assets: [
+        { ticker: 'QLD', price: 70, actualShares: 0, actualAmount: 0 },
+        { ticker: 'IBIT', price: 70, actualShares: 0, actualAmount: 0 },
+      ],
+    }
+
+    const { nextRecords } = rebuildPlanState(multiAssetPlan, [record])
+
+    expect(nextRecords[0].assets.map((asset) => asset.suggestedShares)).toEqual([1, 0])
   })
 
   it('rebuilds state when one zero-share asset is removed from a record', () => {
@@ -160,6 +250,39 @@ describe('rebuildPlanState', () => {
     expect(nextPlan.assets[0].initialShares).toBe(20)
     expect(nextPlan.assets[0].initialAverageCost).toBe(40)
     expect(nextPlan.assets[0].currentShares).toBe(24)
+  })
+
+  it('keeps split-adjusted initial holdings out of the historical VA tracked value', () => {
+    const splitPlan = {
+      ...plan,
+      strategy: 'VA',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      currentPeriod: 2,
+      assets: [{ ...plan.assets[0], currentShares: 24, initialShares: 10 }],
+      splitEvents: [{
+        id: 'split-1',
+        ticker: 'QLD',
+        effectiveDate: '2026-06-01',
+        newShares: 2,
+        oldShares: 1,
+      }],
+    }
+    const preSplitRecord = {
+      ...firstRecord,
+      periodIndex: 0,
+      date: '2026-05-01T00:00:00.000Z',
+      assets: [{ ...firstRecord.assets[0], price: 100, actualShares: 2, actualAmount: 200 }],
+    }
+    const postSplitRecord = {
+      ...secondRecord,
+      periodIndex: 1,
+      date: '2026-06-15T00:00:00.000Z',
+      assets: [{ ...secondRecord.assets[0], price: 50, actualShares: 2, actualAmount: 100 }],
+    }
+
+    const { nextRecords } = rebuildPlanState(splitPlan, [postSplitRecord, preSplitRecord])
+
+    expect(nextRecords.find((record) => record.periodIndex === 1).assets[0].currentValueBefore).toBe(200)
   })
 
   it('does not apply an event on or before a post-split record date', () => {

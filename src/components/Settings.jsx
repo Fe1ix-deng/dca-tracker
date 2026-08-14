@@ -69,11 +69,11 @@ function createDraftPlan() {
   }
 }
 
-function normalizeFormPlan(source) {
+export function normalizeFormPlan(source) {
   const normalizedAssets = [...(source?.assets || [])].map((asset) => ({
     ...asset,
-    currentShares: formatNumericInput(asset.currentShares),
-    initialAverageCost: formatNumericInput(asset.initialAverageCost),
+    currentShares: formatNumericInput(asset.initialSharesOriginal ?? asset.initialShares ?? asset.currentShares),
+    initialAverageCost: formatNumericInput(asset.initialAverageCostOriginal ?? asset.initialAverageCost),
   }))
   const base = source ? { ...source, assets: normalizedAssets } : createDraftPlan()
   const budgetMode = base.budgetMode === 'open-ended' ? 'open-ended' : 'fixed'
@@ -362,8 +362,10 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData 
         name: asset.name?.trim() || asset.ticker.trim().toUpperCase(),
         weight: Number(asset.weight) || 0,
         currentShares: Number(asset.currentShares) || 0,
-        initialShares: Number(asset.initialShares ?? asset.currentShares) || 0,
+        initialShares: Number(asset.currentShares) || 0,
+        initialSharesOriginal: Number(asset.currentShares) || 0,
         initialAverageCost: Number(asset.initialAverageCost) || 0,
+        initialAverageCostOriginal: Number(asset.initialAverageCost) || 0,
       })),
     }
 
@@ -703,7 +705,7 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData 
                   </label>
 
                   <label className="space-y-2">
-                    <span className="text-sm text-muted-foreground">现有股数</span>
+                    <span className="text-sm text-muted-foreground">计划开始前持仓股数</span>
                     <input
                       type="text"
                       inputMode="decimal"
@@ -716,7 +718,7 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData 
                   </label>
 
                   <label className="space-y-2">
-                    <span className="text-sm text-muted-foreground">初始持仓均价</span>
+                    <span className="text-sm text-muted-foreground">计划开始前持仓均价</span>
                     <input
                       type="text"
                       inputMode="decimal"
@@ -795,7 +797,7 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData 
                       </div>
 
                       <label className="space-y-2">
-                        <span className="text-sm text-muted-foreground">现有股数</span>
+                        <span className="text-sm text-muted-foreground">计划开始前持仓股数</span>
                         <input
                           type="text"
                           inputMode="decimal"
@@ -808,7 +810,7 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData 
                       </label>
 
                       <label className="space-y-2">
-                        <span className="text-sm text-muted-foreground">初始持仓均价</span>
+                        <span className="text-sm text-muted-foreground">计划开始前持仓均价</span>
                         <input
                           type="text"
                           inputMode="decimal"

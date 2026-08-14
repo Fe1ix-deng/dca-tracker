@@ -16,6 +16,11 @@ describe('operation commit card layout', () => {
     expect(operationSource).not.toContain('xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.42fr)]')
   })
 
+  it('labels VA tracked value separately from the full holding value', () => {
+    expect(operationSource).toContain('计划内持仓价值')
+    expect(operationSource).toContain('全部持仓价值')
+  })
+
   it('defines responsive summary and submission footer behavior', () => {
     expect(stylesSource).toMatch(/\.operation-commit-summary\s*\{[\s\S]*grid-template-columns:\s*repeat\(3, minmax\(10rem, 1fr\)\);/)
     expect(stylesSource).toMatch(/\.operation-commit-summary-open\s*\{[\s\S]*grid-template-columns:\s*repeat\(2, minmax\(10rem, 1fr\)\);/)

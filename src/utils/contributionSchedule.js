@@ -50,14 +50,16 @@ function addDays(parts, days) {
   }
 }
 
-export function getNextContributionDate({ createdAt, frequency = 'monthly', completedPeriods = 0 } = {}) {
-  const start = parseDateParts(createdAt)
+export function getNextContributionDate({ createdAt, latestExecutionDate, frequency = 'monthly', completedPeriods = 0 } = {}) {
+  const latestExecution = parseDateParts(latestExecutionDate)
+  const start = latestExecution || parseDateParts(createdAt)
   const periods = Math.max(0, Number(completedPeriods) || 0)
   if (!start) return ''
 
+  const hasLatestExecutionDate = Boolean(latestExecution)
   const nextDate = frequency === 'biweekly'
-    ? addDays(start, periods * 14)
-    : addMonths(start, periods)
+    ? addDays(start, hasLatestExecutionDate ? 14 : periods * 14)
+    : addMonths(start, hasLatestExecutionDate ? 1 : periods)
 
   return formatDateParts(nextDate)
 }
