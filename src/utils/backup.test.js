@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { buildBackupPayload } from './backup'
+import * as backupModule from './backup'
+
+const { buildBackupPayload } = backupModule
 
 describe('buildBackupPayload', () => {
   const planA = { id: 'plan-a', name: 'Plan A' }
@@ -31,5 +33,32 @@ describe('buildBackupPayload', () => {
     expect(payload.plans).toEqual([])
     expect(payload.activePlanId).toBeNull()
     expect(payload.records).toEqual([])
+  })
+})
+
+describe('parseBackupPayload', () => {
+  it('normalizes a multi-plan backup and preserves the active plan', () => {
+    const parsed = backupModule.parseBackupPayload?.({
+      plans: [{ id: 'plan-a' }, { id: 'plan-b' }],
+      activePlanId: 'plan-b',
+      records: [{ id: 'record-1', planId: 'plan-b' }],
+    })
+
+    expect(parsed).toEqual({
+      plans: [{ id: 'plan-a' }, { id: 'plan-b' }],
+      plan: { id: 'plan-a' },
+      activePlanId: 'plan-b',
+      records: [{ id: 'record-1', planId: 'plan-b' }],
+    })
+  })
+
+  it('keeps legacy single-plan backups compatible', () => {
+    const parsed = backupModule.parseBackupPayload?.({
+      plan: { id: 'legacy-plan' },
+      records: [],
+    })
+
+    expect(parsed?.plans).toEqual([{ id: 'legacy-plan' }])
+    expect(parsed?.activePlanId).toBe('legacy-plan')
   })
 })

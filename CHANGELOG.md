@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.4.2 - 2026-08-18
+
+### Added
+- Added direct JSON backup import entry points for users without an existing plan, restoring plans and contribution history in one flow.
+
+### Fixed
+- Imported backups now replace the full plan list so temporary plans created during recovery are not left behind.
+
 ## 2.4.0 - 2026-08-13
 
 ### Added

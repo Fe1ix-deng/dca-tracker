@@ -62,4 +62,11 @@ describe('Settings helpers', () => {
     expect(settingsSource).toContain('已加入草稿，保存计划后生效')
     expect(settingsSource).toMatch(/aria-expanded=\{showSplitEvents\}/)
   })
+
+  it('offers backup import while creating or editing a plan', () => {
+    const settingsSource = readFileSync(new URL('./Settings.jsx', import.meta.url), 'utf8')
+
+    expect(settingsSource).toMatch(/function Settings\(\{[^}]*onImportBackup/)
+    expect(settingsSource).toContain('<BackupImportButton')
+  })
 })

@@ -1,17 +1,23 @@
 import { describe, expect, it } from 'vitest'
 import { CURRENT_RELEASE, shouldShowReleaseNotice } from './releaseNotice'
+import packageMetadata from '../../package.json'
+import packageLock from '../../package-lock.json'
 
 describe('release notice visibility', () => {
-  it('publishes the complete 2.4.1 user-facing update summary', () => {
-    expect(CURRENT_RELEASE.version).toBe('2.4.1')
-    expect(CURRENT_RELEASE.date).toBe('2026-08-14')
+  it('publishes the complete 2.4.2 user-facing update summary', () => {
+    expect(CURRENT_RELEASE.version).toBe('2.4.2')
+    expect(CURRENT_RELEASE.date).toBe('2026-08-18')
 
     const summary = CURRENT_RELEASE.items.join(' ')
-    expect(summary).toContain('原有持仓')
-    expect(summary).toContain('VA 定投')
-    expect(summary).toContain('历史价格')
-    expect(summary).toContain('剩余预算')
-    expect(summary).toContain('拆股')
+    expect(summary).toContain('导入 JSON 备份')
+    expect(summary).toContain('定投历史记录')
+    expect(summary).toContain('临时计划')
+  })
+
+  it('keeps package metadata on the same release version', () => {
+    expect(packageMetadata.version).toBe(CURRENT_RELEASE.version)
+    expect(packageLock.version).toBe(CURRENT_RELEASE.version)
+    expect(packageLock.packages[''].version).toBe(CURRENT_RELEASE.version)
   })
 
   it('shows an unread or newer release', () => {

@@ -3,6 +3,7 @@ import { ChevronDown, ChevronUp, Plus, Save, Sparkles, Trash2 } from 'lucide-rea
 import { estimateTargetYield } from '../utils/yieldEstimator'
 import { formatNumericInput, normalizeNumericInput } from '../utils/numericInput'
 import { normalizeDate, normalizeSplitEvents, parseSplitRatio } from '../utils/stockSplits'
+import BackupImportButton from './BackupImportButton'
 
 const strategyOptions = [
   { value: 'VA', label: 'VA定投' },
@@ -166,7 +167,7 @@ export function getSavedReserveRatio(isOpenEnded, reserveRatio) {
   return clampReserveRatio(reserveRatio ?? 0.2)
 }
 
-export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData }) {
+export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData, onImportBackup }) {
   const [form, setForm] = useState(() => normalizeFormPlan(plan))
   const [showAssetForm, setShowAssetForm] = useState(false)
   const [showSplitEvents, setShowSplitEvents] = useState(false)
@@ -1006,6 +1007,8 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData 
             <Save size={18} />
             保存当前计划
           </button>
+
+          <BackupImportButton onImportBackup={onImportBackup} className="control-button w-full" />
 
           <button
             type="button"

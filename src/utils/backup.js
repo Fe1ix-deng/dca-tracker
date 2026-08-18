@@ -13,6 +13,31 @@ function safeParseJson(raw, fallback) {
   }
 }
 
+export function parseBackupPayload(parsed) {
+  if (!parsed || typeof parsed !== 'object') {
+    return null
+  }
+
+  const nextPlans = Array.isArray(parsed.plans)
+    ? parsed.plans
+    : parsed.plan
+      ? [parsed.plan]
+      : []
+  const nextRecords = Array.isArray(parsed.records) ? parsed.records : []
+  const nextActivePlanId = parsed.activePlanId || nextPlans[0]?.id || null
+
+  if (!nextPlans.length && !nextRecords.length) {
+    return null
+  }
+
+  return {
+    plans: nextPlans,
+    plan: nextPlans[0] || null,
+    activePlanId: nextActivePlanId,
+    records: nextRecords,
+  }
+}
+
 // Builds the full backup payload. Falls back to the single active plan only
 // when a full plans list isn't available, so older call sites stay safe.
 export function buildBackupPayload(plan, plans, records) {

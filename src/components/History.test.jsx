@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { getAdjustedAssetDisplay } from './History'
 
@@ -13,5 +14,12 @@ describe('History helpers', () => {
       shares: 2,
       price: 100,
     })
+  })
+
+  it('offers backup import before a plan exists', () => {
+    const source = readFileSync(new URL('./History.jsx', import.meta.url), 'utf8')
+    const emptyStateBranch = source.match(/if \(!plan\) \{([\s\S]*?)\n  \}\n\n  return/)?.[1] ?? ''
+
+    expect(emptyStateBranch).toContain('<BackupImportButton')
   })
 })

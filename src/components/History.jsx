@@ -1,7 +1,8 @@
-import { useMemo, useRef, useState } from 'react'
-import { ChevronDown, ChevronUp, Download, FileUp, Pencil, Trash2 } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { ChevronDown, ChevronUp, Download, Pencil, Trash2 } from 'lucide-react'
 import { formatNumericInput, normalizeNumericInput, toNumberOrFallback } from '../utils/numericInput'
 import { downloadFile } from '../utils/download'
+import BackupImportButton from './BackupImportButton'
 
 const filters = [
   { value: 'all', label: '全部' },
@@ -134,37 +135,11 @@ function buildRecordWithAssets(record, assets, overrides = {}) {
   }
 }
 
-function parseBackupPayload(parsed) {
-  if (!parsed || typeof parsed !== 'object') {
-    return null
-  }
-
-  const nextPlans = Array.isArray(parsed.plans)
-    ? parsed.plans
-    : parsed.plan
-      ? [parsed.plan]
-      : []
-  const nextRecords = Array.isArray(parsed.records) ? parsed.records : []
-  const nextActivePlanId = parsed.activePlanId || nextPlans[0]?.id || null
-
-  if (!nextPlans.length && !nextRecords.length) {
-    return null
-  }
-
-  return {
-    plans: nextPlans,
-    plan: nextPlans[0] || null,
-    activePlanId: nextActivePlanId,
-    records: nextRecords,
-  }
-}
-
 export default function History({ plan, records, onDeleteRecord, onEditRecord, onImportBackup, onExportBackup }) {
   const [activeFilter, setActiveFilter] = useState('all')
   const [expandedId, setExpandedId] = useState('')
   const [editingId, setEditingId] = useState('')
   const [editDraft, setEditDraft] = useState(null)
-  const fileInputRef = useRef(null)
   const isOpenEnded = plan?.budgetMode === 'open-ended'
 
   const planRecords = useMemo(() => {
@@ -281,41 +256,10 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
     setEditDraft(null)
   }
 
-  const handleImportClick = () => {
-    fileInputRef.current?.click()
-  }
-
-  const handleImportFile = async (event) => {
-    const file = event.target.files?.[0]
-    event.target.value = ''
-
-    if (!file) {
-      return
-    }
-
-    try {
-      const content = await file.text()
-      const parsed = JSON.parse(content)
-      const payload = parseBackupPayload(parsed)
-
-      if (!payload) {
-        window.alert('文件格式不正确，请使用本工具导出的 JSON 备份文件。')
-        return
-      }
-
-      const confirmed = window.confirm(
-        '导入前会先自动导出一份当前数据的安全备份到你的下载目录，然后用导入的文件整体覆盖现有计划和历史记录，确认继续？',
-      )
-      if (!confirmed) {
-        return
-      }
-
-      cancelEditing()
-      setExpandedId('')
-      onImportBackup?.(payload)
-    } catch {
-      window.alert('文件格式不正确，请使用本工具导出的 JSON 备份文件。')
-    }
+  const handleImportBackup = (payload) => {
+    cancelEditing()
+    setExpandedId('')
+    onImportBackup?.(payload)
   }
 
   if (!plan) {
@@ -325,6 +269,9 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
           <p className="label">Execution Archive</p>
           <h2 className="empty-state-title">还没有计划</h2>
           <p className="body-copy mx-auto mt-3 max-w-xl">请先创建计划，历史记录会在执行后自动累积。</p>
+          <div className="mt-5 flex justify-center">
+            <BackupImportButton onImportBackup={handleImportBackup} />
+          </div>
         </div>
       </section>
     )
@@ -362,22 +309,7 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
               <Download size={16} />
               导出备份
             </button>
-            <button
-              type="button"
-              onClick={handleImportClick}
-              className="control-button"
-            >
-              <FileUp size={16} />
-              导入备份
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".json"
-              onChange={handleImportFile}
-              aria-label="选择要导入的 JSON 备份文件"
-              className="hidden"
-            />
+            <BackupImportButton onImportBackup={handleImportBackup} />
           </div>
         </div>
 

@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { rebuildPlanState, stateNeedsRebuild } from './App'
 
@@ -329,5 +330,15 @@ describe('rebuildPlanState', () => {
 
     expect(secondBuild.nextRecords[0].assets[0].adjustedShares).toBe(firstBuild.nextRecords[0].assets[0].adjustedShares)
     expect(secondBuild.nextPlan.assets[0].currentShares).toBe(firstBuild.nextPlan.assets[0].currentShares)
+  })
+})
+
+describe('backup import wiring', () => {
+  it('replaces the entire imported plan list instead of appending plans one at a time', () => {
+    const source = readFileSync(new URL('./App.jsx', import.meta.url), 'utf8')
+    const importHandler = source.match(/const handleImportBackup = \(payload\) => \{([\s\S]*?)\n  \}\n\n  const handleClearAllData/)?.[1] ?? ''
+
+    expect(importHandler).toContain('replacePlans(nextPlans, nextActivePlanId)')
+    expect(importHandler).not.toContain('nextPlans.forEach')
   })
 })

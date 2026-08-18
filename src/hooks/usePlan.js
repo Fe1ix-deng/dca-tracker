@@ -50,6 +50,29 @@ function normalizePlan(plan) {
   }
 }
 
+export function normalizePlanState(nextPlans, requestedActivePlanId = null) {
+  const normalizedById = new Map()
+
+  ;(Array.isArray(nextPlans) ? nextPlans : []).forEach((item) => {
+    const normalizedPlan = normalizePlan(item)
+    if (!normalizedPlan?.id) {
+      return
+    }
+
+    normalizedById.set(normalizedPlan.id, normalizedPlan)
+  })
+
+  const plans = Array.from(normalizedById.values())
+  const activePlanId = plans.some((item) => item.id === requestedActivePlanId)
+    ? requestedActivePlanId
+    : plans[0]?.id || null
+
+  return {
+    plans,
+    activePlanId,
+  }
+}
+
 function loadPlanState() {
   const storedPlans = loadPlans().map(normalizePlan).filter(Boolean)
   const storedLegacyPlan = normalizePlan(loadPlan())
@@ -105,6 +128,14 @@ export function usePlan() {
     })
   }
 
+  const replacePlans = (nextPlans, nextActivePlanId = null) => {
+    setState(() => {
+      const nextState = normalizePlanState(nextPlans, nextActivePlanId)
+      persistPlanState(nextState.plans, nextState.activePlanId)
+      return nextState
+    })
+  }
+
   const setActivePlan = (nextActivePlanId) => {
     setState((current) => {
       const safeActivePlanId = current.plans.some((item) => item.id === nextActivePlanId)
@@ -132,6 +163,7 @@ export function usePlan() {
       activePlanId,
       setActivePlan,
       replacePlan,
+      replacePlans,
       resetPlan,
       defaultPlan,
       createEmptyPlan,

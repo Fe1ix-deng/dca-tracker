@@ -251,7 +251,7 @@ function rebuildStateAfterRecordEdit(plan, records, updatedRecord) {
 }
 
 export default function App() {
-  const { plan, plans, activePlanId, setActivePlan, replacePlan, resetPlan } = usePlan()
+  const { plan, plans, activePlanId, setActivePlan, replacePlan, replacePlans, resetPlan } = usePlan()
   const { records, addRecord, replaceRecords } = useRecords()
   const { accent, setAccent, theme, toggleTheme } = useTheme()
   const [activeTab, setActiveTab] = useState('dashboard')
@@ -323,10 +323,7 @@ export default function App() {
     const nextRecords = Array.isArray(payload?.records) ? payload.records : []
 
     replaceRecords(nextRecords)
-    nextPlans.forEach((item) => replacePlan(item))
-    if (nextActivePlanId) {
-      setActivePlan(nextActivePlanId)
-    }
+    replacePlans(nextPlans, nextActivePlanId)
     setActiveTab(nextPlans.length ? 'history' : 'settings')
   }
 
