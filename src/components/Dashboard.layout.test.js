@@ -143,6 +143,13 @@ describe('dashboard metric rendering', () => {
     expect(markup).not.toContain('投入节奏')
   })
 
+  it('renders current holding shares for each ticker in the allocation table', () => {
+    const markup = renderDashboard([createRecord(1)])
+
+    expect(markup).toContain('持仓股数')
+    expect(markup).toContain('3 股')
+  })
+
   it('renders the next period number and estimated contribution date', () => {
     const markup = renderDashboard([createRecord(1)])
 

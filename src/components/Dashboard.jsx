@@ -15,6 +15,16 @@ function formatMoney(value) {
   }).format(Number(value) || 0)
 }
 
+function formatShares(value) {
+  const numeric = Number(value)
+  if (!Number.isFinite(numeric)) return '0'
+
+  return numeric.toLocaleString('en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 8,
+  })
+}
+
 function formatPercent(value) {
   if (value === null || value === undefined || value === '') {
     return '--'
@@ -198,6 +208,7 @@ export default function Dashboard({ plan, records, onNavigate }) {
 
     return {
       name: asset.ticker,
+      shares: Number(asset.currentShares) || 0,
       actualWeight,
       targetWeight,
       value,
@@ -354,6 +365,7 @@ export default function Dashboard({ plan, records, onNavigate }) {
         <div className="dashboard-allocation-table mt-5">
           <div className="dashboard-allocation-table-head">
             <span>Ticker</span>
+            <span>持仓股数</span>
             <span>当前 / 目标</span>
             <span>偏离</span>
             <span className="text-right">市值</span>
@@ -362,6 +374,7 @@ export default function Dashboard({ plan, records, onNavigate }) {
             {currentWeightData.map((asset) => (
               <div key={asset.name} className="dashboard-allocation-table-row">
                 <span className="data-value text-sm">{asset.name}</span>
+                <span className="data-subtle">{formatShares(asset.shares)} 股</span>
                 <span className="data-subtle">{asset.actualWeight}% / {asset.targetWeight}%</span>
                 <span className={`data-subtle ${getGapToneClass(asset.weightGap)}`}>
                   {asset.weightGap >= 0 ? '+' : ''}{asset.weightGap}%

@@ -1321,8 +1321,8 @@ textarea:focus-visible {
     align-items: center;
     display: grid;
     gap: 0.75rem;
-    grid-template-columns: minmax(7rem, 1.1fr) minmax(8rem, 1fr) minmax(5rem, 0.7fr) minmax(7rem, 0.8fr);
-    min-width: 28rem;
+    grid-template-columns: minmax(6rem, 1fr) minmax(6rem, 0.8fr) minmax(8rem, 1fr) minmax(5rem, 0.7fr) minmax(7rem, 0.8fr);
+    min-width: 34rem;
   }
 
   .dashboard-allocation-table-head {
