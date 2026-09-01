@@ -64,8 +64,16 @@ export function getNextContributionDate({ createdAt, latestExecutionDate, freque
   return formatDateParts(nextDate)
 }
 
-export function formatScheduleDate(value) {
+export function formatScheduleDate(value, language = 'zh-CN') {
   const parts = parseDateParts(value)
-  if (!parts) return '待设置'
+  if (!parts) return language === 'en-US' ? 'Not set' : '待设置'
+  if (language === 'en-US') {
+    return new Intl.DateTimeFormat('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      timeZone: 'UTC',
+    }).format(new Date(Date.UTC(parts.year, parts.month - 1, parts.day)))
+  }
   return `${parts.year}年${parts.month}月${parts.day}日`
 }

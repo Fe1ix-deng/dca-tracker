@@ -4,6 +4,7 @@ import { formatNumericInput, normalizeNumericInput, toNumberOrFallback } from '.
 import { downloadFile } from '../utils/download'
 import BackupImportButton from './BackupImportButton'
 import { formatPrice, normalizePriceInput, roundPrice } from '../utils/marketPrecision'
+import { useI18n } from '../i18n/index.jsx'
 
 const filters = [
   { value: 'all', label: '全部' },
@@ -37,8 +38,8 @@ function getTagClass(tag) {
   return 'badge-neutral'
 }
 
-function getFilterLabel(value) {
-  return filters.find((filter) => filter.value === value)?.label || value || '未标记'
+function getFilterLabel(value, t = (source) => source) {
+  return t(filters.find((filter) => filter.value === value)?.label || value || '未标记')
 }
 
 function roundToTwo(value) {
@@ -134,6 +135,7 @@ function buildRecordWithAssets(record, assets, overrides = {}) {
 }
 
 export default function History({ plan, records, onDeleteRecord, onEditRecord, onImportBackup, onExportBackup }) {
+  const { t } = useI18n()
   const [activeFilter, setActiveFilter] = useState('all')
   const [expandedId, setExpandedId] = useState('')
   const [editingId, setEditingId] = useState('')
@@ -152,8 +154,8 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
 
   const latestRecord = planRecords[0] || null
   const totalInvested = planRecords.reduce((sum, record) => sum + (Number(record.totalActualAmount) || 0), 0)
-  const latestRecordTagLabel = latestRecord ? getFilterLabel(latestRecord.tag) : '暂无记录'
-  const activeFilterLabel = getFilterLabel(activeFilter)
+  const latestRecordTagLabel = latestRecord ? getFilterLabel(latestRecord.tag, t) : t('暂无记录')
+  const activeFilterLabel = getFilterLabel(activeFilter, t)
 
   const handleExportCsv = () => {
     if (!planRecords.length) return
@@ -166,7 +168,7 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
   }
 
   const handleDelete = (record) => {
-    const confirmed = window.confirm(`确认删除第${record.periodIndex + 1}期记录？此操作不可撤销`)
+    const confirmed = window.confirm(t('确认删除第 {period} 期记录？此操作不可撤销', { period: record.periodIndex + 1 }))
     if (!confirmed) {
       return
     }
@@ -242,7 +244,7 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
       return
     }
 
-    const confirmed = window.confirm(`确认从第${record.periodIndex + 1}期删除 ${asset.ticker}？此操作只会删除该期的这个标的。`)
+    const confirmed = window.confirm(t('确认从第 {period} 期删除 {ticker}？此操作只会删除该期的这个标的。', { period: record.periodIndex + 1, ticker: asset.ticker }))
     if (!confirmed) {
       return
     }
@@ -265,8 +267,8 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
       <section className="section-shell">
         <div className="empty-state text-textSoft">
           <p className="label">Execution Archive</p>
-          <h2 className="empty-state-title">还没有计划</h2>
-          <p className="body-copy mx-auto mt-3 max-w-xl">请先创建计划，历史记录会在执行后自动累积。</p>
+          <h2 className="empty-state-title">{t('还没有计划')}</h2>
+          <p className="body-copy mx-auto mt-3 max-w-xl">{t('请先创建计划，历史记录会在执行后自动累积。')}</p>
           <div className="mt-5 flex justify-center">
             <BackupImportButton onImportBackup={handleImportBackup} />
           </div>
@@ -281,11 +283,11 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
             <p className="label">Execution Archive</p>
-            <h2 className="section-title">历史记录</h2>
+            <h2 className="section-title">{t('历史记录')}</h2>
             <p className="muted-copy mt-3 max-w-2xl">
               {isOpenEnded
-                ? '无限定投模式下，所有记录会持续累积。这里更像一份执行台账，而不是列表堆叠。'
-                : '固定预算模式下，你可以在这里回看每一期的投入、执行偏差和计划推进情况。'}
+                ? t('无限定投模式下，所有记录会持续累积。这里更像一份执行台账，而不是列表堆叠。')
+                : t('固定预算模式下，你可以在这里回看每一期的投入、执行偏差和计划推进情况。')}
             </p>
           </div>
 
@@ -297,7 +299,7 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
               className="control-button"
             >
               <Download size={16} />
-              导出 CSV
+              {t('导出 CSV')}
             </button>
             <button
               type="button"
@@ -305,7 +307,7 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
               className="control-button"
             >
               <Download size={16} />
-              导出备份
+              {t('导出备份')}
             </button>
             <BackupImportButton onImportBackup={handleImportBackup} />
           </div>
@@ -313,24 +315,24 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
 
         <div className="mt-5 grid gap-3 lg:grid-cols-4">
           <div className="surface-stat">
-            <p className="mini-kicker">记录数</p>
+            <p className="mini-kicker">{t('记录数')}</p>
             <p className="mt-3 data-value text-xl">{planRecords.length}</p>
-            <p className="mt-2 text-xs text-muted-foreground">当前计划累计期数</p>
+            <p className="mt-2 text-xs text-muted-foreground">{t('当前计划累计期数')}</p>
           </div>
           <div className="surface-stat">
-            <p className="mini-kicker">累计投入</p>
+            <p className="mini-kicker">{t('累计投入')}</p>
             <p className="mt-3 data-value text-xl">{formatMoney(totalInvested)}</p>
-            <p className="mt-2 text-xs text-muted-foreground">所有记录的实际投入总和</p>
+            <p className="mt-2 text-xs text-muted-foreground">{t('所有记录的实际投入总和')}</p>
           </div>
           <div className="surface-stat">
-            <p className="mini-kicker">最近记录</p>
+            <p className="mini-kicker">{t('最近记录')}</p>
             <p className="mt-3 data-value text-xl">{latestRecord ? formatDate(latestRecord.date) : '--'}</p>
             <p className="mt-2 text-xs text-muted-foreground">{latestRecordTagLabel}</p>
           </div>
           <div className="surface-stat">
-            <p className="mini-kicker">模式</p>
-            <p className="mt-3 text-base font-medium text-white">{isOpenEnded ? '无限定投' : '固定预算'}</p>
-            <p className="mt-2 text-xs text-muted-foreground">当前筛选 {activeFilterLabel}</p>
+            <p className="mini-kicker">{t('模式')}</p>
+            <p className="mt-3 text-base font-medium text-white">{isOpenEnded ? t('无限定投') : t('固定预算')}</p>
+            <p className="mt-2 text-xs text-muted-foreground">{t('当前筛选 {filter}', { filter: activeFilterLabel })}</p>
           </div>
         </div>
 
@@ -344,7 +346,7 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
                 onClick={() => setActiveFilter(filter.value)}
                 className={`filter-chip ${active ? 'filter-chip-active' : ''}`}
               >
-                {filter.label}
+                {t(filter.label)}
               </button>
             )
           })}
@@ -362,7 +364,7 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-3">
-                      <h3 className="text-[1.02rem] font-semibold tracking-[-0.02em] text-white">第 {record.periodIndex + 1} 期</h3>
+                      <h3 className="text-[1.02rem] font-semibold tracking-[-0.02em] text-white">{t('第 {period} 期', { period: record.periodIndex + 1 })}</h3>
                       <span className="data-subtle text-sm">{formatDate(record.date)}</span>
                       <span className={getTagClass(record.tag)}>
                         {getFilterLabel(record.tag)}
@@ -371,15 +373,15 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
 
                     <div className="mt-4 grid gap-3 md:grid-cols-3">
                       <div className="subtle-panel p-4">
-                        <p className="mini-kicker">本期投入</p>
+                        <p className="mini-kicker">{t('本期投入')}</p>
                         <p className="mt-3 data-value text-xl">{formatMoney(record.totalActualAmount)}</p>
                       </div>
                       <div className="subtle-panel p-4">
-                        <p className="mini-kicker">累计投入</p>
+                        <p className="mini-kicker">{t('累计投入')}</p>
                         <p className="mt-3 data-value text-xl">{formatMoney(record.cumulativeInvested)}</p>
                       </div>
                       <div className="subtle-panel p-4">
-                        <p className="mini-kicker">{isOpenEnded ? '标的数量' : '当期剩余可投'}</p>
+                        <p className="mini-kicker">{isOpenEnded ? t('标的数量') : t('当期剩余可投')}</p>
                         <p className="mt-3 data-value text-xl">
                           {isOpenEnded ? record.assets.length : formatMoney(record.remainingBudget)}
                         </p>
@@ -387,7 +389,7 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
                     </div>
 
                     <p className="mt-4 line-clamp-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-                      {record.note || '本期未填写备注。'}
+                      {record.note || t('本期未填写备注。')}
                     </p>
                   </div>
 
@@ -398,7 +400,7 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
                       className="control-button"
                     >
                       {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                      {expanded ? '收起详情' : '展开详情'}
+                      {expanded ? t('收起详情') : t('展开详情')}
                     </button>
                     <button
                       type="button"
@@ -406,7 +408,7 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
                       className="control-button-positive"
                     >
                       <Pencil size={16} />
-                      编辑记录
+                      {t('编辑记录')}
                     </button>
                     <button
                       type="button"
@@ -414,7 +416,7 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
                       className="control-button-danger"
                     >
                       <Trash2 size={16} />
-                      删除
+                      {t('删除')}
                     </button>
                   </div>
                 </div>
@@ -422,7 +424,7 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
                 {editing ? (
                   <div className="mt-5 border-t border-white/[0.06] pt-5">
                     <div className="mb-4 rounded-md border border-accent/20 bg-accent/10 px-3 py-2 text-sm text-textSoft">
-                      正在编辑第 {record.periodIndex + 1} 期记录，保存后会沿用现有回调重建计划状态。
+                      {t('正在编辑第 {period} 期记录，保存后会沿用现有回调重建计划状态。', { period: record.periodIndex + 1 })}
                     </div>
                     <div className="grid gap-4 xl:grid-cols-2">
                       {record.assets.map((asset) => {
@@ -436,7 +438,7 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
                             <div className="flex items-center justify-between gap-3">
                               <p className="data-value text-base">{asset.ticker}</p>
                               <div className="flex flex-wrap items-center justify-end gap-2">
-                                <span className="mini-kicker">{asset.priceSource === 'auto' ? '自动价格' : '手动价格'}</span>
+                                <span className="mini-kicker">{asset.priceSource === 'auto' ? t('自动价格') : t('手动价格')}</span>
                                 {isZeroShareAsset(draftAsset) && record.assets.length > 1 ? (
                                   <button
                                     type="button"
@@ -444,14 +446,14 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
                                     className="control-button-danger px-3 py-2 text-xs"
                                   >
                                     <Trash2 size={14} />
-                                    删除该标的
+                                    {t('删除该标的')}
                                   </button>
                                 ) : null}
                               </div>
                             </div>
                             <div className="mt-4 grid gap-3 sm:grid-cols-2">
                               <label className="space-y-2">
-                                <span className="text-sm text-muted-foreground">操作价格</span>
+                                <span className="text-sm text-muted-foreground">{t('操作价格')}</span>
                                 <input
                                   type="text"
                                   inputMode="decimal"
@@ -466,7 +468,7 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
                                 />
                               </label>
                               <label className="space-y-2">
-                                <span className="text-sm text-muted-foreground">实际买入股数</span>
+                                <span className="text-sm text-muted-foreground">{t('实际买入股数')}</span>
                                 <input
                                   type="text"
                                   inputMode="decimal"
@@ -479,7 +481,7 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
                               </label>
                             </div>
                             <div className="mt-4 subtle-row">
-                              <span>实际投入</span>
+                              <span>{t('实际投入')}</span>
                               <span className="data-subtle">
                                 {formatMoney(roundToTwo(toNumberOrFallback(draftAsset.price, 0) * toNumberOrFallback(draftAsset.actualShares, 0)))}
                               </span>
@@ -491,7 +493,7 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
 
                     <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(220px,0.36fr)_minmax(0,1fr)]">
                       <label className="space-y-2">
-                        <span className="text-sm text-muted-foreground">决策标签</span>
+                        <span className="text-sm text-muted-foreground">{t('决策标签')}</span>
                         <select
                           value={editDraft.tag}
                           onChange={(event) => setEditDraft((current) => ({ ...current, tag: event.target.value }))}
@@ -506,7 +508,7 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
                       </label>
 
                       <label className="space-y-2">
-                        <span className="text-sm text-muted-foreground">备注</span>
+                        <span className="text-sm text-muted-foreground">{t('备注')}</span>
                         <textarea
                           rows="4"
                           value={editDraft.note}
@@ -522,14 +524,14 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
                         onClick={cancelEditing}
                         className="control-button"
                       >
-                        取消
+                        {t('取消')}
                       </button>
                       <button
                         type="button"
                         onClick={() => handleSaveEdit(record)}
                         className="control-button-primary"
                       >
-                        保存记录
+                        {t('保存记录')}
                       </button>
                     </div>
                   </div>
@@ -543,14 +545,14 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
                           <div className="flex flex-wrap items-start justify-between gap-4">
                             <div>
                               <p className="data-value text-base">{asset.ticker}</p>
-                              <p className="mt-1 text-xs text-muted-foreground">价格来源：{asset.priceSource === 'auto' ? '自动' : '手动'}</p>
+                              <p className="mt-1 text-xs text-muted-foreground">{t('价格来源：')}{asset.priceSource === 'auto' ? t('自动') : t('手动')}</p>
                             </div>
                             <div className="grid gap-2 text-right">
                               <p className="text-sm text-muted-foreground">
-                                操作价格 <span className="data-subtle">{formatHistoryPrice(asset.price, plan)}</span>
+                                {t('操作价格')} <span className="data-subtle">{formatHistoryPrice(asset.price, plan)}</span>
                               </p>
                               <p className="text-sm text-muted-foreground">
-                                目标值 <span className="data-subtle">{formatMoney(asset.targetValue)}</span>
+                                {t('目标值')} <span className="data-subtle">{formatMoney(asset.targetValue)}</span>
                               </p>
                               {isZeroShareAsset(asset) && record.assets.length > 1 ? (
                                 <button
@@ -559,7 +561,7 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
                                   className="control-button-danger justify-self-end px-3 py-2 text-xs"
                                 >
                                   <Trash2 size={14} />
-                                  删除该标的
+                                  {t('删除该标的')}
                                 </button>
                               ) : null}
                             </div>
@@ -567,29 +569,29 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
 
                           <div className="mt-4 grid gap-3 md:grid-cols-4">
                             <div className="surface-stat">
-                              <p className="mini-kicker">{asset.totalCurrentValueBefore !== undefined ? '计划内持仓价值' : '前持仓价值'}</p>
+                              <p className="mini-kicker">{asset.totalCurrentValueBefore !== undefined ? t('计划内持仓价值') : t('前持仓价值')}</p>
                               <p className="mt-3 data-value text-base">{formatMoney(asset.currentValueBefore)}</p>
                               {asset.totalCurrentValueBefore !== undefined ? (
-                                <p className="mt-2 text-xs text-muted-foreground">全部持仓价值 {formatMoney(asset.totalCurrentValueBefore)}</p>
+                                <p className="mt-2 text-xs text-muted-foreground">{t('全部持仓价值')} {formatMoney(asset.totalCurrentValueBefore)}</p>
                               ) : null}
                             </div>
                             <div className="surface-stat">
-                              <p className="mini-kicker">建议买入</p>
+                              <p className="mini-kicker">{t('建议买入')}</p>
                               <p className="mt-3 data-value text-base">{formatMoney(asset.requiredAmount)}</p>
                             </div>
                             <div className="surface-stat">
-                              <p className="mini-kicker">建议股数</p>
+                              <p className="mini-kicker">{t('建议股数')}</p>
                               <p className="mt-3 data-value text-base">{asset.suggestedShares}</p>
                             </div>
                             <div className="surface-stat">
-                              <p className="mini-kicker">实际买入</p>
-                              <p className="mt-3 data-value text-base">{asset.actualShares} 股</p>
+                              <p className="mini-kicker">{t('实际买入')}</p>
+                              <p className="mt-3 data-value text-base">{asset.actualShares} {t('股')}</p>
                               <p className="mt-2 data-subtle text-sm">{formatMoney(asset.actualAmount)}</p>
                             </div>
                           </div>
                           {adjusted.hasAdjustment ? (
                             <div className="mt-3 rounded-md border border-accent/20 bg-accent/10 px-3 py-3 text-sm text-textSoft">
-                              拆股调整后口径：{adjusted.shares} 股 · {formatHistoryPrice(adjusted.price, plan)}/股
+                              {t('拆股调整后口径：')}{adjusted.shares} {t('股')} · {formatHistoryPrice(adjusted.price, plan)}/{t('股')}
                             </div>
                           ) : null}
                         </div>
@@ -604,7 +606,7 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
         ) : (
           <div className="empty-state text-muted-foreground">
             <p className="label">No Records</p>
-            <h2 className="empty-state-title">当前筛选条件下还没有记录</h2>
+            <h2 className="empty-state-title">{t('当前筛选条件下还没有记录')}</h2>
           </div>
         )}
       </div>

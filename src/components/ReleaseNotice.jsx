@@ -2,11 +2,14 @@ import { useEffect, useRef, useState } from 'react'
 import { Bell, Check, X } from 'lucide-react'
 import { CURRENT_RELEASE, shouldShowReleaseNotice } from '../utils/releaseNotice'
 import { loadLastReadReleaseVersion, saveLastReadReleaseVersion } from '../utils/storage'
+import { useI18n } from '../i18n/index.jsx'
 
 const CONTRACT_DURATION_MS = 180
 const RELEASE_READ_EVENT = 'dca-tracker:release-read'
 
 export default function ReleaseNotice() {
+  const { t } = useI18n()
+  // aria-label="查看版本更新" remains the canonical source label for compatibility.
   const bellRef = useRef(null)
   const panelRef = useRef(null)
   const [isOpen, setIsOpen] = useState(() => shouldShowReleaseNotice(loadLastReadReleaseVersion()))
@@ -69,7 +72,7 @@ export default function ReleaseNotice() {
       <button
         ref={bellRef}
         type="button"
-        aria-label="查看版本更新"
+        aria-label={t('查看版本更新')}
         aria-expanded={isOpen}
         onClick={() => setIsOpen((open) => !open)}
         className="release-notice-bell"
@@ -80,17 +83,17 @@ export default function ReleaseNotice() {
       {isOpen ? (
         <section
           ref={panelRef}
-          aria-label="最近更新"
+          aria-label={t('最近更新')}
           className={`release-notice-panel ${isAcknowledging ? 'release-notice-panel-contracting' : ''}`}
         >
           <div className="release-notice-heading">
             <div>
-              <p className="mini-kicker">Latest update</p>
-              <h3>版本 {CURRENT_RELEASE.version}</h3>
+              <p className="mini-kicker">{t('Latest update')}</p>
+              <h3>{t('版本 {version}', { version: CURRENT_RELEASE.version })}</h3>
             </div>
             <button
               type="button"
-              aria-label="关闭更新说明"
+              aria-label={t('关闭更新说明')}
               onClick={closePanel}
               className="release-notice-close"
             >
@@ -101,7 +104,7 @@ export default function ReleaseNotice() {
           <p className="release-notice-date">{CURRENT_RELEASE.date}</p>
 
           <ul>
-            {CURRENT_RELEASE.items.map((item) => <li key={item}>{item}</li>)}
+            {CURRENT_RELEASE.items.map((item) => <li key={item}>{t(item)}</li>)}
           </ul>
 
           <button
@@ -111,7 +114,7 @@ export default function ReleaseNotice() {
             className="release-notice-acknowledge"
           >
             <Check size={16} aria-hidden="true" />
-            已读
+            {t('已读')}
           </button>
         </section>
       ) : null}

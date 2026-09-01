@@ -13,6 +13,7 @@ import {
 import { fetchQuote } from '../hooks/useQuote'
 import { getBudgetLimitedShares, getRemainingDeployableBudget } from '../utils/budget'
 import { formatPrice, normalizePriceInput } from '../utils/marketPrecision'
+import { useI18n } from '../i18n/index.jsx'
 
 const decisionOptions = [
   { value: 'normal', label: '正常执行' },
@@ -55,6 +56,7 @@ export function getActualSharesForDecision({ tag, hasManualActualShares, actualS
 }
 
 export default function OperationPanel({ plan, records, onSaveRecord, onNavigate }) {
+  const { t } = useI18n()
   const [operationDate, setOperationDate] = useState(() => new Date().toISOString().slice(0, 10))
   const [tag, setTag] = useState('normal')
   const [note, setNote] = useState('')
@@ -86,7 +88,7 @@ export default function OperationPanel({ plan, records, onSaveRecord, onNavigate
     return (
       <section className="section-shell">
         <div className="section-card text-center text-textSoft">
-          请先创建计划，再进入本期操作页。
+          {t('请先创建计划，再进入本期操作页。')}
         </div>
       </section>
     )
@@ -263,13 +265,13 @@ export default function OperationPanel({ plan, records, onSaveRecord, onNavigate
             <p className="label">Execution Workspace</p>
             <h2 className="section-title">
               {isOpenEnded
-                ? `第 ${currentPeriod + 1} 期 · 长期执行中`
+                ? t('第 {period} 期 · 长期执行中', { period: currentPeriod + 1 })
                 : isPlanComplete
-                  ? `已完成 ${totalPeriods} / ${totalPeriods} 期`
-                  : `第 ${currentPeriod + 1} 期 / 共 ${totalPeriods} 期`}
+                  ? t('已完成 {periods} / {total} 期', { periods: totalPeriods, total: totalPeriods })
+                  : t('第 {period} 期 / 共 {total} 期', { period: currentPeriod + 1, total: totalPeriods })}
             </h2>
             <p className="muted-copy mt-3 max-w-2xl">
-              先确认价格来源，再写入实际股数。每张标的卡都会同步展示目标、建议与最终执行金额。
+              {t('先确认价格来源，再写入实际股数。每张标的卡都会同步展示目标、建议与最终执行金额。')}
             </p>
           </div>
 
@@ -283,7 +285,7 @@ export default function OperationPanel({ plan, records, onSaveRecord, onNavigate
             className="relative control-button"
           >
             <CalendarDays size={16} />
-            <span className="text-muted-foreground">执行日期</span>
+            <span className="text-muted-foreground">{t('执行日期')}</span>
             <span className="data-value">{operationDate}</span>
             <input
               ref={dateInputRef}
@@ -293,33 +295,33 @@ export default function OperationPanel({ plan, records, onSaveRecord, onNavigate
               onChange={(event) => setOperationDate(event.target.value)}
               className="pointer-events-none absolute opacity-0"
               tabIndex={-1}
-              aria-label="执行日期"
+              aria-label={t('执行日期')}
             />
           </button>
         </div>
 
         <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <div className="surface-stat">
-            <p className="mini-kicker">计划策略</p>
+            <p className="mini-kicker">{t('计划策略')}</p>
             <p className="mt-3 text-base font-medium text-white">{plan.strategy}</p>
-            <p className="mt-2 text-xs text-muted-foreground">{plan.frequency === 'biweekly' ? '双周执行' : '月度执行'}</p>
+            <p className="mt-2 text-xs text-muted-foreground">{plan.frequency === 'biweekly' ? t('双周执行') : t('月度执行')}</p>
           </div>
           <div className="surface-stat">
-            <p className="mini-kicker">上期记录</p>
+            <p className="mini-kicker">{t('上期记录')}</p>
             <p className="mt-3 data-value text-xl">{latestRecord ? String(latestRecord.date).slice(0, 10) : '--'}</p>
-            <p className="mt-2 text-xs text-muted-foreground">{latestRecord ? '已有上一期参考' : '这是首次执行记录'}</p>
+            <p className="mt-2 text-xs text-muted-foreground">{latestRecord ? t('已有上一期参考') : t('这是首次执行记录')}</p>
           </div>
           <div className="surface-stat">
-            <p className="mini-kicker">标的数量</p>
+            <p className="mini-kicker">{t('标的数量')}</p>
             <p className="mt-3 data-value text-xl">{plan.assets.length}</p>
-            <p className="mt-2 text-xs text-muted-foreground">已录入价格 {pricingReadyCount}/{plan.assets.length}</p>
+            <p className="mt-2 text-xs text-muted-foreground">{t('已录入价格 {count}/{total}', { count: pricingReadyCount, total: plan.assets.length })}</p>
           </div>
           <div className="surface-stat">
-            <p className="mini-kicker">{isOpenEnded ? '本期目标' : '预算模式'}</p>
+            <p className="mini-kicker">{isOpenEnded ? t('本期目标') : t('预算模式')}</p>
             <p className="mt-3 data-value text-xl">
-              {isOpenEnded ? formatMoney(plan.periodicTarget) : '固定预算'}
+              {isOpenEnded ? formatMoney(plan.periodicTarget) : t('固定预算')}
             </p>
-            <p className="mt-2 text-xs text-muted-foreground">{isOpenEnded ? '目标投入参考值' : '按总预算推进'}</p>
+            <p className="mt-2 text-xs text-muted-foreground">{isOpenEnded ? t('目标投入参考值') : t('按总预算推进')}</p>
           </div>
         </div>
       </div>
@@ -340,23 +342,23 @@ export default function OperationPanel({ plan, records, onSaveRecord, onNavigate
                   <p className="mt-2 text-sm text-muted-foreground">{asset.name}</p>
                 </div>
                 <span className={asset.priceSource === 'auto' ? 'operation-status-pill operation-status-pill-auto' : 'operation-status-pill operation-status-pill-manual'}>
-                  {asset.priceSource === 'auto' ? '自动价格' : '手动价格'}
+                  {asset.priceSource === 'auto' ? t('自动价格') : t('手动价格')}
                 </span>
               </div>
 
               <div className="operation-input-grid mt-6">
                 <div className="subtle-panel flex h-full flex-col p-4">
                   <div className="flex items-center justify-between gap-3">
-                    <p className="mini-kicker">价格输入</p>
+                    <p className="mini-kicker">{t('价格输入')}</p>
                     {asset.loading ? (
                       <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                         <LoaderCircle size={13} className="animate-spin" />
-                        获取中
+                        {t('获取中')}
                       </span>
                     ) : null}
                   </div>
                   <label className="mt-4 flex-1">
-                    <span className="sr-only">{asset.ticker} 操作价格</span>
+                    <span className="sr-only">{asset.ticker} {t('操作价格')}</span>
                     <input
                       type="text"
                       inputMode="decimal"
@@ -377,7 +379,7 @@ export default function OperationPanel({ plan, records, onSaveRecord, onNavigate
                     />
                   </label>
                   <div className="mt-4 subtle-row operation-footer-row">
-                    <span className="operation-footer-label">可手动输入</span>
+                    <span className="operation-footer-label">{t('可手动输入')}</span>
                     <button
                       type="button"
                       onClick={() => handleAutoFetch(asset.ticker)}
@@ -385,18 +387,18 @@ export default function OperationPanel({ plan, records, onSaveRecord, onNavigate
                       className="operation-action-button"
                     >
                       {asset.loading ? <LoaderCircle size={14} className="animate-spin" /> : <RefreshCcw size={14} />}
-                      {asset.loading ? '获取中…' : '自动获取价格'}
+                      {asset.loading ? t('获取中…') : t('自动获取价格')}
                     </button>
                   </div>
                   {asset.fetchError ? (
-                    <p className="mt-3 rounded-md border border-negative/25 bg-negative/10 px-3 py-2 text-xs leading-5 text-negative">{asset.fetchError}</p>
+                    <p className="mt-3 rounded-md border border-negative/25 bg-negative/10 px-3 py-2 text-xs leading-5 text-negative">{t(asset.fetchError)}</p>
                   ) : null}
                 </div>
 
                 <div className="subtle-panel flex h-full flex-col p-4">
-                  <p className="mini-kicker">实际买入股数</p>
+                  <p className="mini-kicker">{t('实际买入股数')}</p>
                   <label className="mt-4 flex-1">
-                    <span className="sr-only">{asset.ticker} 实际买入股数</span>
+                    <span className="sr-only">{asset.ticker} {t('实际买入股数')}</span>
                     <input
                       type="text"
                       inputMode="decimal"
@@ -422,7 +424,7 @@ export default function OperationPanel({ plan, records, onSaveRecord, onNavigate
                     />
                   </label>
                   <div className="mt-4 subtle-row operation-footer-row">
-                    <span className="operation-footer-label">实际投入金额</span>
+                    <span className="operation-footer-label">{t('实际投入金额')}</span>
                     <span className="operation-footer-value">{formatMoney(asset.actualAmount)}</span>
                   </div>
                 </div>
@@ -430,28 +432,28 @@ export default function OperationPanel({ plan, records, onSaveRecord, onNavigate
 
               <div className="operation-metrics-grid mt-5">
                 <div className="operation-metric-card p-4">
-                  <p className="operation-metric-label">{plan.strategy === 'VA' ? '计划内持仓价值' : '当前持仓价值'}</p>
+                  <p className="operation-metric-label">{plan.strategy === 'VA' ? t('计划内持仓价值') : t('当前持仓价值')}</p>
                   <p className="operation-metric-value">{formatMoney(asset.currentValueBefore)}</p>
                   {plan.strategy === 'VA' ? (
-                    <p className="mt-3 text-xs text-muted-foreground">全部持仓价值 {formatMoney(asset.totalCurrentValueBefore)}</p>
+                    <p className="mt-3 text-xs text-muted-foreground">{t('全部持仓价值')} {formatMoney(asset.totalCurrentValueBefore)}</p>
                   ) : null}
                 </div>
 
                 <div className="operation-metric-card p-4">
-                  <p className="operation-metric-label">{plan.strategy === 'VA' ? 'VA 目标值' : '本期固定投入'}</p>
+                  <p className="operation-metric-label">{plan.strategy === 'VA' ? t('VA 目标值') : t('本期固定投入')}</p>
                   <p className="operation-metric-value">{formatMoney(asset.targetValue)}</p>
                 </div>
 
                 <div className="operation-metric-card p-4">
-                  <p className="operation-metric-label">建议买入金额</p>
+                  <p className="operation-metric-label">{t('建议买入金额')}</p>
                   <p className="operation-metric-value">{formatMoney(asset.requiredAmount)}</p>
                   {isOpenEnded && Number(plan.periodicTarget) === 0 ? (
-                    <p className="mt-3 text-xs text-muted-foreground">灵活决定模式下，这里的建议值仅作为参考。</p>
+                    <p className="mt-3 text-xs text-muted-foreground">{t('灵活决定模式下，这里的建议值仅作为参考。')}</p>
                   ) : null}
                 </div>
 
                 <div className="operation-accent-card p-4">
-                  <p className="operation-metric-label">建议买入股数</p>
+                  <p className="operation-metric-label">{t('建议买入股数')}</p>
                   <p className="operation-metric-value">{asset.suggestedSharesDisplay}</p>
                 </div>
               </div>
@@ -464,8 +466,8 @@ export default function OperationPanel({ plan, records, onSaveRecord, onNavigate
         <div className="operation-commit-header">
           <div className="min-w-0">
             <p className="label">Decision & Commit</p>
-            <h3 className="section-title">确认本期执行</h3>
-            <p className="muted-copy mt-3">先标记本期执行决策，再补充备注，最后把整期记录写入历史。</p>
+            <h3 className="section-title">{t('确认本期执行')}</h3>
+            <p className="muted-copy mt-3">{t('先标记本期执行决策，再补充备注，最后把整期记录写入历史。')}</p>
           </div>
           <span className={isReadyToConfirm ? 'badge-positive' : 'badge-neutral'} aria-live="polite">
             {isReadyToConfirm ? 'Ready' : 'Pending'}
@@ -480,34 +482,34 @@ export default function OperationPanel({ plan, records, onSaveRecord, onNavigate
               onClick={() => setTag(option.value)}
               className={getDecisionButtonClass(tag === option.value)}
             >
-              {option.label}
+              {t(option.label)}
             </button>
           ))}
         </div>
 
         <div className={`operation-commit-summary mt-5 ${isOpenEnded ? 'operation-commit-summary-open' : ''}`}>
           <div className="surface-stat operation-commit-stat">
-            <p className="mini-kicker">本期实际投入</p>
+            <p className="mini-kicker">{t('本期实际投入')}</p>
             <p className="operation-commit-value">{formatMoney(totalActualAmount)}</p>
           </div>
           <div className="surface-stat operation-commit-stat">
-            <p className="mini-kicker">累计投入</p>
+            <p className="mini-kicker">{t('累计投入')}</p>
             <p className="operation-commit-value">{formatMoney(cumulativeInvested)}</p>
           </div>
           {!isOpenEnded ? (
             <div className="surface-stat operation-commit-stat operation-commit-stat-last">
-              <p className="mini-kicker">剩余可投</p>
+              <p className="mini-kicker">{t('剩余可投')}</p>
               <p className="operation-commit-value">{formatMoney(remainingBudget)}</p>
             </div>
           ) : null}
         </div>
 
         <label className="mt-5 block space-y-2">
-          <span className="text-sm text-muted-foreground">备注</span>
+          <span className="text-sm text-muted-foreground">{t('备注')}</span>
           <textarea
             rows="3"
             value={note}
-            placeholder="记录你这期的判断…"
+            placeholder={t('记录你这期的判断…')}
             onChange={(event) => setNote(event.target.value)}
             className="surface-textarea operation-commit-note"
           />
@@ -516,20 +518,20 @@ export default function OperationPanel({ plan, records, onSaveRecord, onNavigate
         <div className="operation-commit-footer mt-5 pt-4">
           {isPlanComplete ? (
             <p className="operation-commit-message operation-commit-message-warning">
-              固定期数计划已完成。如需继续执行，请先到设置页增加总期数或填写新计划。
+              {t('固定期数计划已完成。如需继续执行，请先到设置页增加总期数或填写新计划。')}
             </p>
           ) : !isWithinBudget ? (
             <p className="operation-commit-message operation-commit-message-warning">
-              本期实际投入不能超过剩余预算 {formatMoney(remainingBudgetBefore)}。
+              {t('本期实际投入不能超过剩余预算 {amount}。', { amount: formatMoney(remainingBudgetBefore) })}
             </p>
           ) : !isReadyToConfirm ? (
             <p className="operation-commit-message">
-              先为全部标的填入价格，并等待自动获取完成后，再确认写入历史。
+              {t('先为全部标的填入价格，并等待自动获取完成后，再确认写入历史。')}
             </p>
           ) : (
             <p className="operation-commit-message operation-commit-message-ready">
               <CheckCircle2 size={15} />
-              所有价格已就绪，可以写入历史。
+              {t('所有价格已就绪，可以写入历史。')}
             </p>
           )}
 
@@ -539,7 +541,7 @@ export default function OperationPanel({ plan, records, onSaveRecord, onNavigate
             disabled={!isReadyToConfirm}
             className="control-button-primary operation-commit-action"
           >
-            确认记录本期操作
+            {t('确认记录本期操作')}
           </button>
         </div>
       </div>

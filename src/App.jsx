@@ -10,6 +10,7 @@ import { getBudgetLimitedShares, getRemainingDeployableBudget } from './utils/bu
 import { downloadBackupJson } from './utils/backup'
 import { roundPrice } from './utils/marketPrecision'
 import { adjustAssetForSplit, adjustHoldingForSplit, getSplitFactor, getSplitFactorBetween, normalizeSplitEvents } from './utils/stockSplits'
+import { useI18n } from './i18n/index.jsx'
 
 const Dashboard = lazy(() => import('./components/Dashboard'))
 const History = lazy(() => import('./components/History'))
@@ -24,10 +25,11 @@ const tabs = {
 }
 
 function ScreenFallback() {
+  const { t } = useI18n()
   return (
     <section className="card p-6">
-      <p className="label">页面加载中</p>
-      <p className="body-copy mt-3">正在准备当前页面内容，请稍候。</p>
+      <p className="label">{t('页面加载中')}</p>
+      <p className="body-copy mt-3">{t('正在准备当前页面内容，请稍候。')}</p>
     </section>
   )
 }

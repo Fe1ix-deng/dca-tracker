@@ -30,6 +30,11 @@ describe('contribution schedule helpers', () => {
     expect(getNextContributionDate({ frequency: 'monthly', completedPeriods: 1 })).toBe('')
   })
 
+  it('formats schedule dates for English', () => {
+    expect(formatScheduleDate('2026-08-26', 'en-US')).toBe('Aug 26, 2026')
+    expect(formatScheduleDate('', 'en-US')).toBe('Not set')
+  })
+
   it('uses the latest actual execution date as the next schedule anchor', () => {
     expect(getNextContributionDate({
       createdAt: '2026-07-01T09:30:00.000Z',

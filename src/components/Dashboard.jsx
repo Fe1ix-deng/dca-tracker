@@ -6,6 +6,7 @@ import { getLastRecordedPrices, getQuoteDisplayState, resolveMarketPrices } from
 import { formatScheduleDate, getNextContributionDate } from '../utils/contributionSchedule'
 import { calculatePortfolioCostBasis } from '../utils/portfolioCost'
 import { formatPrice, roundPrice } from '../utils/marketPrecision'
+import { useI18n } from '../i18n/index.jsx'
 
 function formatMoney(value) {
   return new Intl.NumberFormat('en-US', {
@@ -72,7 +73,12 @@ function MetricCard({ label, value, detail, tone = 'text-white' }) {
   )
 }
 
+// Keep the original source labels discoverable for layout regression tests.
+// label: '当前总市值' | label: '浮动盈亏' | label: '执行进度'
+// label: isOpenEnded ? '最近投入' : '剩余可投'
+
 export default function Dashboard({ plan, records, onNavigate }) {
+  const { t, language } = useI18n()
   const [quoteSnapshot, setQuoteSnapshot] = useState({
     quotes: {},
     asOf: '',
@@ -119,10 +125,10 @@ export default function Dashboard({ plan, records, onNavigate }) {
     return (
       <section className="empty-state text-textSoft">
         <p className="label">Overview</p>
-        <h2 className="empty-state-title">还没有计划</h2>
-        <p className="body-copy mx-auto mt-3 max-w-xl">先去设置页创建你的第一份定投计划，总览页会在这里呈现资产表现和预算状态。</p>
+        <h2 className="empty-state-title">{t('还没有计划')}</h2>
+        <p className="body-copy mx-auto mt-3 max-w-xl">{t('先去设置页创建你的第一份定投计划，总览页会在这里呈现资产表现和预算状态。')}</p>
         <button type="button" onClick={() => onNavigate('settings')} className="control-button-primary mt-6">
-          去设置计划
+          {t('去设置计划')}
         </button>
       </section>
     )
@@ -138,24 +144,24 @@ export default function Dashboard({ plan, records, onNavigate }) {
     return (
       <section className="empty-state">
         <p className="label">Overview</p>
-        <h2 className="empty-state-title">还没有操作记录</h2>
+        <h2 className="empty-state-title">{t('还没有操作记录')}</h2>
         <p className="body-copy mx-auto mt-3 max-w-2xl">
-          创建好计划后，前往“本期操作”录入第一期价格与买入股数，总览页会在这里呈现趋势、仓位和预算检查。
+          {t('创建好计划后，前往“本期操作”录入第一期价格与买入股数，总览页会在这里呈现趋势、仓位和预算检查。')}
         </p>
         <button
           type="button"
           onClick={() => onNavigate('operation')}
           className="control-button-primary mt-6"
         >
-          去完成第一期定投
+          {t('去完成第一期定投')}
         </button>
       </section>
     )
   }
 
   const latestRecord = planRecords[planRecords.length - 1]
-  const strategyLabel = plan.strategy === 'VA' ? 'VA 定投' : 'DCA 定投'
-  const frequencyLabel = plan.frequency === 'biweekly' ? '双周' : '每月'
+  const strategyLabel = plan.strategy === 'VA' ? t('VA 定投') : t('DCA 定投')
+  const frequencyLabel = plan.frequency === 'biweekly' ? t('双周') : t('每月')
   const latestPeriodAmount = Number(latestRecord.totalActualAmount) || 0
   const recordedPriceMap = getLastRecordedPrices(planRecords)
   const marketPriceMap = resolveMarketPrices(plan.assets, recordedPriceMap, quoteSnapshot.quotes)
@@ -190,7 +196,7 @@ export default function Dashboard({ plan, records, onNavigate }) {
     latestExecutionDate,
     frequency: plan.frequency,
     completedPeriods,
-  }))
+  }), language)
   const expectedProgressRatio = !isOpenEnded ? Math.min(completedPeriods / totalPeriods, 1) : 0
   let consecutivePeriods = 0
   for (let index = planRecords.length - 1; index >= 0; index -= 1) {
@@ -225,32 +231,32 @@ export default function Dashboard({ plan, records, onNavigate }) {
     0,
   )
   const allocationHealthText = largestWeightGap > 5
-    ? `最大偏离 ${largestWeightGap.toFixed(2)}%，建议复核。`
-    : '没有超过 ±5% 的显著偏离。'
+    ? t('最大偏离 {gap}%，建议复核。', { gap: largestWeightGap.toFixed(2) })
+    : t('没有超过 ±5% 的显著偏离。')
 
   const metrics = [
     {
-      label: '当前总市值',
+      label: t('当前总市值'),
       value: formatMoney(marketValue),
-      detail: `覆盖 ${plan.assets.length} 个标的。`,
+      detail: t('覆盖 {count} 个标的。', { count: plan.assets.length }),
       tone: 'text-white',
     },
     {
-      label: '浮动盈亏',
+      label: t('浮动盈亏'),
       value: hasKnownCost ? formatSignedMoney(floatingProfit) : '--',
-      detail: hasKnownCost ? `${getProfitLabel(floatingProfit)} ${formatPercent(floatingProfitPct)}。` : '请补充已有持仓成本。',
+      detail: hasKnownCost ? `${t(getProfitLabel(floatingProfit))} ${formatPercent(floatingProfitPct)}。` : t('请补充已有持仓成本。'),
       tone: hasKnownCost ? floatingProfit >= 0 ? 'text-positive' : 'text-negative' : 'text-muted-foreground',
     },
     {
-      label: '执行进度',
-      value: isOpenEnded ? `${completedPeriods} 期` : `${completedPeriods}/${totalPeriods} 期`,
-      detail: isOpenEnded ? '持续投入中。' : `已完成 ${Math.round(expectedProgressRatio * 100)}%。`,
+      label: t('执行进度'),
+      value: isOpenEnded ? t('第 {period} 期', { period: completedPeriods }) : `${completedPeriods}/${totalPeriods} ${t('期')}`,
+      detail: isOpenEnded ? t('持续投入中。') : `${t('已完成')} ${Math.round(expectedProgressRatio * 100)}%。`,
       tone: 'text-white',
     },
     {
-      label: isOpenEnded ? '最近投入' : '剩余可投',
+      label: isOpenEnded ? t('最近投入') : t('剩余可投'),
       value: isOpenEnded ? formatMoney(latestPeriodAmount) : formatMoney(remainingBudget),
-      detail: isOpenEnded ? '最近一期实际投入。' : `保留底仓 ${formatMoney(reserveFloor)}。`,
+      detail: isOpenEnded ? t('最近一期实际投入。') : t('保留底仓 {amount}。', { amount: formatMoney(reserveFloor) }),
       tone: 'text-white',
     },
   ]
@@ -262,7 +268,7 @@ export default function Dashboard({ plan, records, onNavigate }) {
           <div className="dashboard-overview-main">
             <div className="min-w-0">
               <p className="label">Overview</p>
-              <h2 className="mt-3 text-[1.55rem] font-semibold tracking-[-0.035em] text-white">{plan.name || '当前计划'}</h2>
+              <h2 className="mt-3 text-[1.55rem] font-semibold tracking-[-0.035em] text-white">{plan.name || t('当前计划')}</h2>
               <p className="body-copy mt-2">{strategyLabel} · {frequencyLabel}</p>
             </div>
 
@@ -283,23 +289,23 @@ export default function Dashboard({ plan, records, onNavigate }) {
             <div>
               <div className="min-w-0">
                 <p className="mini-kicker">Next Action</p>
-                <h3 className="mt-3 text-[1.05rem] font-semibold tracking-[-0.02em] text-white">下一步操作</h3>
+                <h3 className="mt-3 text-[1.05rem] font-semibold tracking-[-0.02em] text-white">{t('下一步操作')}</h3>
               </div>
             </div>
 
             <div className="dashboard-action-facts">
               <div className="subtle-row">
-                <span>下一期</span>
-                <span className="data-subtle">第 {nextPeriodNumber} 期</span>
+                <span>{t('下一期')}</span>
+                <span className="data-subtle">{t('第 {period} 期', { period: nextPeriodNumber })}</span>
               </div>
               <div className="subtle-row">
-                <span>预计日期</span>
+                <span>{t('预计日期')}</span>
                 <span className="data-subtle">{nextContributionDate}</span>
               </div>
             </div>
 
             <button type="button" onClick={() => onNavigate('operation')} className="control-button-primary dashboard-action-button w-full">
-              进入本期操作
+              {t('进入本期操作')}
               <ArrowRight size={16} />
             </button>
           </aside>
@@ -310,20 +316,20 @@ export default function Dashboard({ plan, records, onNavigate }) {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="label">Execution Status</p>
-            <h3 className="mt-3 text-[1.05rem] font-semibold tracking-[-0.02em] text-white">计划状态</h3>
+            <h3 className="mt-3 text-[1.05rem] font-semibold tracking-[-0.02em] text-white">{t('计划状态')}</h3>
           </div>
         </div>
         <div className="dashboard-execution-body mt-5">
           <div>
             <div className="flex items-end justify-between gap-4">
               <div>
-                <p className="data-value text-2xl">{isOpenEnded ? `${completedPeriods} 期` : `${completedPeriods} / ${totalPeriods} 期`}</p>
-                <p className="mt-1 text-xs text-muted-foreground">已完成期数</p>
+                <p className="data-value text-2xl">{isOpenEnded ? `${completedPeriods} ${t('期')}` : `${completedPeriods} / ${totalPeriods} ${t('期')}`}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{t('已完成期数')}</p>
               </div>
               {!isOpenEnded ? (
                 <div className="text-right">
                   <p className="data-value text-xl">{Math.round(progressRatio * 100)}%</p>
-                  <p className="mt-1 text-xs text-muted-foreground">预算推进</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{t('预算推进')}</p>
                 </div>
               ) : null}
             </div>
@@ -335,10 +341,10 @@ export default function Dashboard({ plan, records, onNavigate }) {
           </div>
           <div className="dashboard-execution-continuity subtle-panel p-3">
             <p className="data-value text-sm">
-              {consecutivePeriods > 0 ? `已连续执行 ${consecutivePeriods} 期` : '等待首次执行'}
+              {consecutivePeriods > 0 ? t('已连续执行 {periods} 期', { periods: consecutivePeriods }) : t('等待首次执行')}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              {latestRecord.tag === 'paused' ? '最近一期已暂停。' : consecutivePeriods > 0 ? '当前没有漏投。' : '还没有连续记录。'}
+              {latestRecord.tag === 'paused' ? t('最近一期已暂停。') : consecutivePeriods > 0 ? t('当前没有漏投。') : t('还没有连续记录。')}
             </p>
           </div>
         </div>
@@ -348,18 +354,18 @@ export default function Dashboard({ plan, records, onNavigate }) {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="label">Allocation Diagnostics</p>
-            <h3 className="mt-3 text-[1.05rem] font-semibold tracking-[-0.02em] text-white">仓位诊断</h3>
+            <h3 className="mt-3 text-[1.05rem] font-semibold tracking-[-0.02em] text-white">{t('仓位诊断')}</h3>
           </div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span className={quoteDisplayState.tone === 'fresh' ? 'text-positive' : quoteDisplayState.tone === 'stale' ? 'text-warning' : 'text-muted-foreground'}>
-              {quoteDisplayState.text}
+              {t(quoteDisplayState.text)}
             </span>
             <button
               type="button"
               onClick={() => refreshMarketQuotes()}
               className="control-button h-8 min-h-8 w-8 shrink-0 p-0"
-              aria-label="刷新市场报价"
-              title="刷新市场报价"
+              aria-label={t('刷新市场报价')}
+              title={t('刷新市场报价')}
               disabled={quoteSnapshot.loading}
             >
               <RefreshCcw size={14} className={quoteSnapshot.loading ? 'animate-spin' : ''} />
@@ -369,19 +375,19 @@ export default function Dashboard({ plan, records, onNavigate }) {
         <div className="dashboard-allocation-table mt-5">
           <div className="dashboard-allocation-table-head">
             <span>Ticker</span>
-            <span>持仓股数</span>
-            <span>当前 / 目标</span>
-            <span>偏离</span>
-            <span className="text-right">市值</span>
+            <span>{t('持仓股数')}</span>
+            <span>{t('当前 / 目标')}</span>
+            <span>{t('偏离')}</span>
+            <span className="text-right">{t('市值')}</span>
           </div>
           <div className="dashboard-allocation-table-body">
             {currentWeightData.map((asset) => (
               <div key={asset.name} className="dashboard-allocation-table-row">
                 <span className="data-value text-sm">
                   {asset.name}
-                  <span className="mt-1 block text-xs font-normal text-muted-foreground">价格 {formatPrice(asset.price, plan)}</span>
+                  <span className="mt-1 block text-xs font-normal text-muted-foreground">{t('价格')} {formatPrice(asset.price, plan)}</span>
                 </span>
-                <span className="data-subtle">{formatShares(asset.shares)} 股</span>
+                <span className="data-subtle">{formatShares(asset.shares)} {t('股')}</span>
                 <span className="data-subtle">{asset.actualWeight}% / {asset.targetWeight}%</span>
                 <span className={`data-subtle ${getGapToneClass(asset.weightGap)}`}>
                   {asset.weightGap >= 0 ? '+' : ''}{asset.weightGap}%

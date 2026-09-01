@@ -12,6 +12,7 @@ import {
   WalletCards,
 } from 'lucide-react'
 import ReleaseNotice from './ReleaseNotice'
+import { useI18n } from '../i18n/index.jsx'
 
 const navItems = [
   { key: 'dashboard', label: '总览', title: 'Dashboard', icon: BarChart3 },
@@ -27,29 +28,29 @@ const accentOptions = [
   { id: 'mono', label: '黑白灰', color: '#a5a8b2' },
 ]
 
-function PlanSelector({ plans, activePlanId, onChangeActivePlan, compact = false }) {
+function PlanSelector({ plans, activePlanId, onChangeActivePlan, compact = false, t }) {
   const hasPlans = Array.isArray(plans) && plans.length > 0
 
   if (!hasPlans) {
     return (
       <div className={compact ? 'shell-plan-empty shell-plan-empty-compact' : 'shell-plan-empty'}>
-        <span>暂无计划</span>
+        <span>{t('暂无计划')}</span>
       </div>
     )
   }
 
   return (
     <label className={compact ? 'shell-plan shell-plan-compact' : 'shell-plan'}>
-      <span>当前计划</span>
+      <span>{t('当前计划')}</span>
       <div className="shell-plan-select-wrap">
         <select
-          aria-label="切换当前计划"
+          aria-label={t('切换当前计划')}
           value={activePlanId}
           onChange={(event) => onChangeActivePlan?.(event.target.value)}
         >
           {plans.map((plan) => (
             <option key={plan.id} value={plan.id}>
-              {plan.name || '未命名计划'}
+              {plan.name || t('未命名计划')}
             </option>
           ))}
         </select>
@@ -59,10 +60,10 @@ function PlanSelector({ plans, activePlanId, onChangeActivePlan, compact = false
   )
 }
 
-function ThemeControl({ theme, accent = 'indigo', onToggleTheme, onChangeAccent, compact = false }) {
+function ThemeControl({ theme, accent = 'indigo', onToggleTheme, onChangeAccent, compact = false, t }) {
   const isDark = theme === 'dark'
   const Icon = isDark ? Moon : SunMedium
-  const nextThemeLabel = isDark ? '切换到日间主题' : '切换到夜间主题'
+  const nextThemeLabel = isDark ? t('切换到日间主题') : t('切换到夜间主题')
   const [isAccentMenuOpen, setIsAccentMenuOpen] = useState(false)
   const wrapperRef = useRef(null)
   const arrowRef = useRef(null)
@@ -121,15 +122,15 @@ function ThemeControl({ theme, accent = 'indigo', onToggleTheme, onChangeAccent,
           className={compact ? 'theme-toggle theme-toggle-compact' : 'theme-toggle'}
         >
           <Icon size={17} aria-hidden="true" />
-          <span>{isDark ? '夜间' : '日间'}</span>
+          <span>{isDark ? t('夜间') : t('日间')}</span>
         </button>
         <button
           ref={arrowRef}
           type="button"
           aria-haspopup="menu"
           aria-expanded={isAccentMenuOpen}
-          aria-label="选择强调色"
-          title="选择强调色"
+          aria-label={t('选择强调色')}
+          title={t('选择强调色')}
           onClick={() => setIsAccentMenuOpen((isOpen) => !isOpen)}
           className={compact
             ? 'theme-arrow theme-arrow-compact'
@@ -142,7 +143,7 @@ function ThemeControl({ theme, accent = 'indigo', onToggleTheme, onChangeAccent,
         <div
           className="theme-accent-menu"
           role="menu"
-          aria-label="强调色"
+          aria-label={t('强调色')}
         >
           {accentOptions.map((option, index) => (
             <button
@@ -162,7 +163,7 @@ function ThemeControl({ theme, accent = 'indigo', onToggleTheme, onChangeAccent,
                 aria-hidden="true"
                 style={{ backgroundColor: option.color }}
               />
-              <span>{option.label}</span>
+              <span>{t(option.label)}</span>
               {accent === option.id && <Check size={15} aria-hidden="true" />}
             </button>
           ))}
@@ -172,7 +173,7 @@ function ThemeControl({ theme, accent = 'indigo', onToggleTheme, onChangeAccent,
   )
 }
 
-function NavButton({ item, active, onChangeTab, mobile = false }) {
+function NavButton({ item, active, onChangeTab, mobile = false, t }) {
   const Icon = item.icon
 
   return (
@@ -183,12 +184,38 @@ function NavButton({ item, active, onChangeTab, mobile = false }) {
       className={mobile ? `mobile-nav-button ${active ? 'mobile-nav-button-active' : ''}` : `sidebar-nav-button ${active ? 'sidebar-nav-button-active' : ''}`}
     >
       <Icon size={mobile ? 18 : 17} aria-hidden="true" />
-      <span>{item.label}</span>
+      <span>{t(item.label)}</span>
     </button>
   )
 }
 
-function BackupReminderBanner({ onExportBackup, onDismiss }) {
+function LanguageControl({ language, onChangeLanguage, compact = false, t }) {
+  return (
+    <div className={compact ? 'language-control language-control-compact' : 'language-control'} role="group" aria-label={t('语言')}>
+      <button
+        type="button"
+        aria-pressed={language === 'zh-CN'}
+        className={language === 'zh-CN' ? 'language-option language-option-active' : 'language-option'}
+        onClick={() => onChangeLanguage('zh-CN')}
+        title={t('中文')}
+      >
+        中
+      </button>
+      <button
+        type="button"
+        aria-label="English"
+        aria-pressed={language === 'en-US'}
+        className={language === 'en-US' ? 'language-option language-option-active' : 'language-option'}
+        onClick={() => onChangeLanguage('en-US')}
+        title="English"
+      >
+        EN
+      </button>
+    </div>
+  )
+}
+
+function BackupReminderBanner({ onExportBackup, onDismiss, t }) {
   return (
     <div
       role="status"
@@ -197,19 +224,19 @@ function BackupReminderBanner({ onExportBackup, onDismiss }) {
       <div className="flex min-w-0 items-start gap-3">
         <TriangleAlert size={18} className="mt-0.5 shrink-0 text-warning" aria-hidden="true" />
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-white">你有尚未备份的数据</p>
+        <p className="text-sm font-semibold text-white">{t('你有尚未备份的数据')}</p>
           <p className="body-copy mt-1">
-            数据目前只保存在这台设备的浏览器里，换设备、清缓存或重装浏览器都可能导致丢失，建议导出一份 JSON 备份。
+            {t('数据目前只保存在这台设备的浏览器里，换设备、清缓存或重装浏览器都可能导致丢失，建议导出一份 JSON 备份。')}
           </p>
         </div>
       </div>
       <div className="flex w-full shrink-0 gap-2 sm:w-auto">
         <button type="button" onClick={onDismiss} className="control-button">
-          稍后再说
+          {t('稍后再说')}
         </button>
         <button type="button" onClick={onExportBackup} className="control-button-primary">
           <Download size={16} aria-hidden="true" />
-          立即备份
+          {t('立即备份')}
         </button>
       </div>
     </div>
@@ -230,6 +257,7 @@ export default function Layout({
   backupStatus = null,
   onExportBackup,
 }) {
+  const { t, language, setLanguage } = useI18n()
   const activeItem = navItems.find((item) => item.key === activeTab) || navItems[0]
   // Remembers which change-timestamp the user already dismissed, so the
   // banner comes back if new data changes after a dismissal, but not before.
@@ -241,7 +269,7 @@ export default function Layout({
 
   return (
     <div id="root-layout" className="app-shell bg-radial text-white" data-theme={theme}>
-      <aside className="desktop-sidebar" aria-label="主导航">
+      <aside className="desktop-sidebar" aria-label={t('主导航')}>
         <div className="sidebar-brand">
           <div className="brand-mark">DC</div>
           <div className="min-w-0">
@@ -250,13 +278,14 @@ export default function Layout({
           </div>
         </div>
 
-        <nav className="sidebar-nav" aria-label="页面">
+        <nav className="sidebar-nav" aria-label={t('页面')}>
           {navItems.map((item) => (
             <NavButton
               key={item.key}
               item={item}
               active={item.key === activeTab}
               onChangeTab={onChangeTab}
+              t={t}
             />
           ))}
         </nav>
@@ -266,20 +295,23 @@ export default function Layout({
             plans={plans}
             activePlanId={activePlanId}
             onChangeActivePlan={onChangeActivePlan}
+            t={t}
           />
           <ThemeControl
             theme={theme}
             accent={accent}
             onToggleTheme={onToggleTheme}
             onChangeAccent={onChangeAccent}
+            t={t}
           />
+          <LanguageControl language={language} onChangeLanguage={setLanguage} t={t} />
         </div>
       </aside>
 
       <div className="mobile-topbar">
         <div className="min-w-0">
-          <p className="mobile-page-kicker">{activeItem.title}</p>
-          <h1 className="mobile-page-title">{activeItem.label}</h1>
+          <p className="mobile-page-kicker">{t(activeItem.title)}</p>
+          <h1 className="mobile-page-title">{t(activeItem.label)}</h1>
         </div>
         <div className="mobile-topbar-actions">
           <PlanSelector
@@ -287,6 +319,7 @@ export default function Layout({
             activePlanId={activePlanId}
             onChangeActivePlan={onChangeActivePlan}
             compact
+            t={t}
           />
           <ThemeControl
             theme={theme}
@@ -294,7 +327,9 @@ export default function Layout({
             onToggleTheme={onToggleTheme}
             onChangeAccent={onChangeAccent}
             compact
+            t={t}
           />
+          <LanguageControl language={language} onChangeLanguage={setLanguage} compact t={t} />
           <div className="mobile-release-notice">
             <ReleaseNotice />
           </div>
@@ -311,13 +346,14 @@ export default function Layout({
             <BackupReminderBanner
               onExportBackup={onExportBackup}
               onDismiss={() => setDismissedChangeAt(backupStatus.lastDataChangeAt)}
+              t={t}
             />
           )}
           {children}
         </main>
       </div>
 
-      <nav className="mobile-tabbar" aria-label="底部导航">
+      <nav className="mobile-tabbar" aria-label={t('底部导航')}>
         <div className="mobile-tabbar-grid">
           {navItems.map((item) => (
             <NavButton
@@ -326,6 +362,7 @@ export default function Layout({
               active={item.key === activeTab}
               onChangeTab={onChangeTab}
               mobile
+              t={t}
             />
           ))}
         </div>
