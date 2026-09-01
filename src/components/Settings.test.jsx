@@ -19,6 +19,12 @@ describe('Settings helpers', () => {
     expect(form.assets[0].initialAverageCost).toBe('77.62')
   })
 
+  it('preserves the selected A-share market in the Settings draft', () => {
+    const form = normalizeFormPlan({ market: 'CN', assets: [] })
+
+    expect(form.market).toBe('CN')
+  })
+
   it('aligns the asset-weight status text and value on a shared baseline', () => {
     const stylesheet = readFileSync(new URL('../index.css', import.meta.url), 'utf8')
 

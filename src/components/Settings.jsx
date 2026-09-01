@@ -3,11 +3,17 @@ import { ChevronDown, ChevronUp, Plus, Save, Sparkles, Trash2 } from 'lucide-rea
 import { estimateTargetYield } from '../utils/yieldEstimator'
 import { formatNumericInput, normalizeNumericInput } from '../utils/numericInput'
 import { normalizeDate, normalizeSplitEvents, parseSplitRatio } from '../utils/stockSplits'
+import { normalizeMarket } from '../utils/marketPrecision'
 import BackupImportButton from './BackupImportButton'
 
 const strategyOptions = [
   { value: 'VA', label: 'VA定投' },
   { value: 'DCA', label: 'DCA定额' },
+]
+
+const marketOptions = [
+  { value: 'US', label: '美股' },
+  { value: 'CN', label: 'A股' },
 ]
 
 const budgetModeOptions = [
@@ -56,6 +62,7 @@ function createDraftPlan() {
     id: '',
     name: '',
     strategy: 'VA',
+    market: 'US',
     budgetMode: 'fixed',
     totalBudget: 50000,
     reserveRatio: 0.2,
@@ -85,6 +92,7 @@ export function normalizeFormPlan(source) {
   return {
     ...createDraftPlan(),
     ...base,
+    market: normalizeMarket(base.market),
     splitEvents: normalizeSplitEvents(base.splitEvents),
     budgetMode,
     reserveRatio: budgetMode === 'open-ended' ? 0 : clampReserveRatio(base.reserveRatio),
@@ -458,6 +466,20 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData,
                 onChange={(event) => updateField('name', event.target.value)}
                 className="surface-input"
               />
+            </label>
+            <label className="mt-4 block space-y-2">
+              <span className="text-sm text-muted-foreground">市场</span>
+              <select
+                value={form.market}
+                onChange={(event) => updateField('market', event.target.value)}
+                className="surface-select"
+              >
+                {marketOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label} ({option.value})
+                  </option>
+                ))}
+              </select>
             </label>
           </div>
 

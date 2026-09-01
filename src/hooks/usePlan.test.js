@@ -2,6 +2,14 @@ import { describe, expect, it } from 'vitest'
 import * as usePlanModule from './usePlan'
 
 describe('normalizePlanState', () => {
+  it('defaults legacy plans without a market to US', () => {
+    const state = usePlanModule.normalizePlanState?.([
+      { id: 'legacy-plan', name: 'Legacy plan', assets: [] },
+    ], 'legacy-plan')
+
+    expect(state?.plans[0]?.market).toBe('US')
+  })
+
   it('replaces stale plans with only the imported plan list', () => {
     const importedPlan = { id: 'imported-plan', name: 'Imported plan', assets: [] }
 

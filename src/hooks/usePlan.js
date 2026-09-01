@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { loadActivePlanId, loadPlan, loadPlans, saveActivePlanId, savePlan, savePlans } from '../utils/storage'
 import { normalizeSplitEvents } from '../utils/stockSplits'
+import { normalizeMarket } from '../utils/marketPrecision'
 
 const defaultPlan = null
 const OPEN_ENDED_PLACEHOLDER_PERIODS = 9999
@@ -15,6 +16,7 @@ function createEmptyPlan() {
     id: '',
     name: '',
     strategy: 'VA',
+    market: 'US',
     budgetMode: 'fixed',
     totalBudget: 10000,
     reserveRatio: 0.2,
@@ -41,6 +43,7 @@ function normalizePlan(plan) {
       ? plan.assets.filter((asset) => asset && typeof asset === 'object')
       : [],
     splitEvents: normalizeSplitEvents(plan.splitEvents),
+    market: normalizeMarket(plan.market),
     budgetMode,
     reserveRatio: budgetMode === 'open-ended' ? 0 : clampReserveRatio(plan.reserveRatio),
     periodicTarget: Number(plan.periodicTarget) || 0,
