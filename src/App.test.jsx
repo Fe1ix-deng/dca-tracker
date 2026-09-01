@@ -97,6 +97,51 @@ describe('rebuildPlanState', () => {
     expect(nextRecords[0].remainingBudget).toBe(15800)
   })
 
+  it('preserves CN price precision for rebuilt recommendations and legacy US rounding', () => {
+    const cnPlan = {
+      ...plan,
+      market: 'CN',
+      budgetMode: 'open-ended',
+      periodicTarget: 18.52,
+      currentPeriod: 1,
+      assets: [{ ...plan.assets[0], currentShares: 0, weight: 1 }],
+    }
+    const cnRecord = {
+      ...firstRecord,
+      assets: [{ ...firstRecord.assets[0], price: 12.345, actualShares: 3 }],
+    }
+
+    const { nextRecords: cnRecords } = rebuildPlanState(cnPlan, [cnRecord])
+    const cnAsset = cnRecords[0].assets[0]
+
+    expect(cnAsset.price).toBe(12.345)
+    expect(cnAsset.suggestedShares).toBe(2)
+    expect(cnAsset.actualAmount).toBe(37.04)
+
+    const { market: _market, ...legacyPlan } = cnPlan
+    const { nextRecords: legacyRecords } = rebuildPlanState(legacyPlan, [cnRecord])
+
+    expect(legacyRecords[0].assets[0].price).toBe(12.35)
+
+    const cnSplitPlan = {
+      ...cnPlan,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      splitEvents: [{
+        id: 'split-cn',
+        ticker: 'QLD',
+        effectiveDate: '2026-02-01',
+        newShares: 2,
+        oldShares: 1,
+      }],
+    }
+    const { nextRecords: cnSplitRecords } = rebuildPlanState(cnSplitPlan, [{
+      ...cnRecord,
+      date: '2026-01-01T00:00:00.000Z',
+    }])
+
+    expect(cnSplitRecords[0].assets[0].adjustedPrice).toBe(6.173)
+  })
+
   it('stores VA history with tracked and total pre-buy values', () => {
     const vaPlan = {
       ...plan,

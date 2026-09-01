@@ -8,6 +8,7 @@ import useTheme from './hooks/useTheme'
 import { clearAll, getBackupStatus, markBackedUp, markDataChanged } from './utils/storage'
 import { getBudgetLimitedShares, getRemainingDeployableBudget } from './utils/budget'
 import { downloadBackupJson } from './utils/backup'
+import { roundPrice } from './utils/marketPrecision'
 import { adjustAssetForSplit, adjustHoldingForSplit, getSplitFactor, getSplitFactorBetween, normalizeSplitEvents } from './utils/stockSplits'
 
 const Dashboard = lazy(() => import('./components/Dashboard'))
@@ -35,10 +36,10 @@ function roundToTwo(value) {
   return Number((Number(value) || 0).toFixed(2))
 }
 
-function normalizeRecordAssets(record) {
+function normalizeRecordAssets(record, marketOrPlan) {
   const assets = Array.isArray(record?.assets) ? record.assets : []
   const nextAssets = assets.map((asset) => {
-    const price = roundToTwo(asset.price)
+    const price = roundPrice(Number(asset.price) || 0, marketOrPlan)
     const actualShares = Number(asset.actualShares) || 0
     return {
       ...asset,
@@ -126,7 +127,7 @@ export function rebuildPlanState(plan, records, sourceRecords = records) {
   let cumulativeInvested = 0
 
   const rebuiltPlanRecords = planRecords.map((record, index) => {
-    const normalizedRecord = normalizeRecordAssets(record)
+    const normalizedRecord = normalizeRecordAssets(record, plan)
     const recordDate = String(record.date || '').slice(0, 10)
 
     plan.assets.forEach((planAsset) => {
@@ -141,7 +142,7 @@ export function rebuildPlanState(plan, records, sourceRecords = records) {
       const planAssetIndex = plan.assets.findIndex((item) => item.ticker === asset.ticker)
       const planAsset = plan.assets[planAssetIndex]
       const previousShares = Number(assetSharesMap.get(asset.ticker)) || 0
-      const price = roundToTwo(asset.price)
+      const price = roundPrice(asset.price, plan)
       const initialShares = Number(initialSharesMap.get(asset.ticker)) || 0
       const initialSharesAtRecord = roundToTwo(
         initialShares * getSplitFactorBetween(asset.ticker, planBasisDate, recordDate, splitEvents),
@@ -171,6 +172,7 @@ export function rebuildPlanState(plan, records, sourceRecords = records) {
       const actualAmount = roundToTwo(actualShares * price)
       const splitFactor = getSplitFactor(asset.ticker, recordDate, splitEvents, asOfDate)
       const adjustedAsset = adjustAssetForSplit({ ...asset, actualAmount }, splitFactor)
+      const adjustedPrice = roundPrice(adjustedAsset.adjustedPrice, plan)
       const nextShares = roundToTwo(previousShares + actualShares)
 
       assetSharesMap.set(asset.ticker, nextShares)
@@ -187,8 +189,8 @@ export function rebuildPlanState(plan, records, sourceRecords = records) {
         actualShares,
         actualAmount,
         adjustedShares: adjustedAsset.adjustedShares,
-        adjustedPrice: adjustedAsset.adjustedPrice,
-        adjustedActualAmount: roundToTwo(adjustedAsset.adjustedShares * adjustedAsset.adjustedPrice),
+        adjustedPrice,
+        adjustedActualAmount: roundToTwo(adjustedAsset.adjustedShares * adjustedPrice),
         splitFactor,
       }
     })
