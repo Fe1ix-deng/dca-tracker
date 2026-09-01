@@ -432,21 +432,30 @@ export default function OperationPanel({ plan, records, onSaveRecord, onNavigate
 
               <div className="operation-metrics-grid mt-5">
                 <div className="operation-metric-card p-4">
-                  <p className="operation-metric-label">{plan.strategy === 'VA' ? t('计划内持仓价值') : t('当前持仓价值')}</p>
+                  <p className="operation-metric-label">{plan.strategy === 'VA' ? t('计划内当前市值') : t('当前持仓价值')}</p>
                   <p className="operation-metric-value">{formatMoney(asset.currentValueBefore)}</p>
                   {plan.strategy === 'VA' ? (
-                    <p className="mt-3 text-xs text-muted-foreground">{t('全部持仓价值')} {formatMoney(asset.totalCurrentValueBefore)}</p>
+                    <>
+                      <p className="mt-3 text-xs text-muted-foreground">{t('不含计划创建前持仓')}</p>
+                      <p className="mt-2 text-xs text-muted-foreground">{t('全部持仓价值')} {formatMoney(asset.totalCurrentValueBefore)}</p>
+                    </>
                   ) : null}
                 </div>
 
                 <div className="operation-metric-card p-4">
-                  <p className="operation-metric-label">{plan.strategy === 'VA' ? t('VA 目标值') : t('本期固定投入')}</p>
+                  <p className="operation-metric-label">{plan.strategy === 'VA' ? t('本期目标持仓市值') : t('本期固定投入')}</p>
                   <p className="operation-metric-value">{formatMoney(asset.targetValue)}</p>
+                  {plan.strategy === 'VA' ? (
+                    <p className="mt-3 text-xs text-muted-foreground">{t('买入后计划内持仓应达到')}</p>
+                  ) : null}
                 </div>
 
                 <div className="operation-metric-card p-4">
-                  <p className="operation-metric-label">{t('建议买入金额')}</p>
+                  <p className="operation-metric-label">{plan.strategy === 'VA' ? t('距目标还需投入') : t('建议买入金额')}</p>
                   <p className="operation-metric-value">{formatMoney(asset.requiredAmount)}</p>
+                  {plan.strategy === 'VA' ? (
+                    <p className="mt-3 text-xs text-muted-foreground">{t('目标值 − 当前计划内市值')}</p>
+                  ) : null}
                   {isOpenEnded && Number(plan.periodicTarget) === 0 ? (
                     <p className="mt-3 text-xs text-muted-foreground">{t('灵活决定模式下，这里的建议值仅作为参考。')}</p>
                   ) : null}
@@ -455,6 +464,7 @@ export default function OperationPanel({ plan, records, onSaveRecord, onNavigate
                 <div className="operation-accent-card p-4">
                   <p className="operation-metric-label">{t('建议买入股数')}</p>
                   <p className="operation-metric-value">{asset.suggestedSharesDisplay}</p>
+                  <p className="mt-3 text-xs text-muted-foreground">{t('按当前价格换算')}</p>
                 </div>
               </div>
             </article>

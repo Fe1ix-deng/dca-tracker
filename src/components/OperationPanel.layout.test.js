@@ -17,7 +17,8 @@ describe('operation commit card layout', () => {
   })
 
   it('labels VA tracked value separately from the full holding value', () => {
-    expect(operationSource).toContain('计划内持仓价值')
+    expect(operationSource).toContain('计划内当前市值')
+    expect(operationSource).toContain('不含计划创建前持仓')
     expect(operationSource).toContain('全部持仓价值')
   })
 
