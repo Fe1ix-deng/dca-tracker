@@ -27,4 +27,18 @@ describe('market price precision', () => {
     expect(formatPrice(100, 'CN')).toBe('100')
     expect(normalizePriceInput('12.3456', 'CN')).toBe('12.345')
   })
+
+  it('keeps formatted prices safe for controlled inputs at four digits', () => {
+    expect(formatPrice(1000.12, 'US')).toBe('1000.12')
+    expect(formatPrice(1000.123, 'CN')).toBe('1000.123')
+    expect(normalizePriceInput(formatPrice(1000.123, 'CN'), 'CN')).toBe('1000.123')
+    expect(formatPrice('', 'CN')).toBe('')
+  })
+
+  it('rounds numeric strings and returns zero for invalid prices without throwing', () => {
+    expect(roundPrice('1000.1234', 'CN')).toBe(1000.123)
+    expect(roundPrice(Number.NaN, 'CN')).toBe(0)
+    expect(roundPrice(Number.POSITIVE_INFINITY, 'US')).toBe(0)
+    expect(roundPrice(Symbol('invalid-price'), 'US')).toBe(0)
+  })
 })

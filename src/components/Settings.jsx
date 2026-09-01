@@ -3,7 +3,7 @@ import { ChevronDown, ChevronUp, Plus, Save, Sparkles, Trash2 } from 'lucide-rea
 import { estimateTargetYield } from '../utils/yieldEstimator'
 import { formatNumericInput, normalizeNumericInput } from '../utils/numericInput'
 import { normalizeDate, normalizeSplitEvents, parseSplitRatio } from '../utils/stockSplits'
-import { normalizeMarket } from '../utils/marketPrecision'
+import { formatPrice, getPriceDecimals, normalizeMarket, normalizePriceInput } from '../utils/marketPrecision'
 import BackupImportButton from './BackupImportButton'
 
 const strategyOptions = [
@@ -78,10 +78,13 @@ function createDraftPlan() {
 }
 
 export function normalizeFormPlan(source) {
+  const market = normalizeMarket(source?.market)
   const normalizedAssets = [...(source?.assets || [])].map((asset) => ({
     ...asset,
     currentShares: formatNumericInput(asset.initialSharesOriginal ?? asset.initialShares ?? asset.currentShares),
-    initialAverageCost: formatNumericInput(asset.initialAverageCostOriginal ?? asset.initialAverageCost),
+    initialAverageCost: formatNumericInput(asset.initialAverageCostOriginal ?? asset.initialAverageCost, {
+      decimalPlaces: getPriceDecimals(market),
+    }),
   }))
   const base = source ? { ...source, assets: normalizedAssets } : createDraftPlan()
   const budgetMode = base.budgetMode === 'open-ended' ? 'open-ended' : 'fixed'
@@ -92,7 +95,7 @@ export function normalizeFormPlan(source) {
   return {
     ...createDraftPlan(),
     ...base,
-    market: normalizeMarket(base.market),
+    market,
     splitEvents: normalizeSplitEvents(base.splitEvents),
     budgetMode,
     reserveRatio: budgetMode === 'open-ended' ? 0 : clampReserveRatio(base.reserveRatio),
@@ -251,7 +254,7 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData,
           weight: Number(assetDraft.weight) || 0,
           currentShares: Number(assetDraft.currentShares) || 0,
           initialShares: Number(assetDraft.currentShares) || 0,
-          initialAverageCost: Number(assetDraft.initialAverageCost) || 0,
+          initialAverageCost: Number(normalizePriceInput(assetDraft.initialAverageCost, current.market)) || 0,
         },
       ])
 
@@ -373,8 +376,8 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData,
         currentShares: Number(asset.currentShares) || 0,
         initialShares: Number(asset.currentShares) || 0,
         initialSharesOriginal: Number(asset.currentShares) || 0,
-        initialAverageCost: Number(asset.initialAverageCost) || 0,
-        initialAverageCostOriginal: Number(asset.initialAverageCost) || 0,
+        initialAverageCost: Number(normalizePriceInput(asset.initialAverageCost, form.market)) || 0,
+        initialAverageCostOriginal: Number(normalizePriceInput(asset.initialAverageCost, form.market)) || 0,
       })),
     }
 
@@ -747,8 +750,11 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData,
                       inputMode="decimal"
                       value={assetDraft.initialAverageCost}
                       placeholder="0"
-                      onChange={(event) => setAssetDraft((current) => ({ ...current, initialAverageCost: normalizeNumericInput(event.target.value) }))}
-                      onBlur={() => setAssetDraft((current) => ({ ...current, initialAverageCost: formatNumericInput(current.initialAverageCost) }))}
+                      onChange={(event) => setAssetDraft((current) => ({ ...current, initialAverageCost: normalizePriceInput(event.target.value, form.market) }))}
+                      onBlur={() => setAssetDraft((current) => ({
+                        ...current,
+                        initialAverageCost: current.initialAverageCost === '' ? '' : formatPrice(current.initialAverageCost, form.market),
+                      }))}
                       className="surface-input financial-input"
                     />
                   </label>
@@ -839,8 +845,11 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData,
                           inputMode="decimal"
                           value={asset.initialAverageCost}
                           placeholder="0"
-                          onChange={(event) => updateAssetInitialAverageCost(asset.ticker, normalizeNumericInput(event.target.value))}
-                          onBlur={() => updateAssetInitialAverageCost(asset.ticker, formatNumericInput(asset.initialAverageCost))}
+                          onChange={(event) => updateAssetInitialAverageCost(asset.ticker, normalizePriceInput(event.target.value, form.market))}
+                          onBlur={() => updateAssetInitialAverageCost(
+                            asset.ticker,
+                            asset.initialAverageCost === '' ? '' : formatPrice(asset.initialAverageCost, form.market),
+                          )}
                           className="surface-input financial-input"
                         />
                       </label>

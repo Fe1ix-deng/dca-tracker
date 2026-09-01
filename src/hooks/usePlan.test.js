@@ -10,6 +10,23 @@ describe('normalizePlanState', () => {
     expect(state?.plans[0]?.market).toBe('US')
   })
 
+  it('normalizes persisted initial average costs with the plan market precision', () => {
+    const state = usePlanModule.normalizePlanState?.([
+      {
+        id: 'cn',
+        market: 'CN',
+        assets: [{ ticker: '600519', initialAverageCost: 12.3456 }],
+      },
+      {
+        id: 'us',
+        assets: [{ ticker: 'QLD', initialAverageCost: 12.345 }],
+      },
+    ])
+
+    expect(state?.plans.find((plan) => plan.id === 'cn')?.assets[0]?.initialAverageCost).toBe(12.346)
+    expect(state?.plans.find((plan) => plan.id === 'us')?.assets[0]?.initialAverageCost).toBe(12.35)
+  })
+
   it('replaces stale plans with only the imported plan list', () => {
     const importedPlan = { id: 'imported-plan', name: 'Imported plan', assets: [] }
 

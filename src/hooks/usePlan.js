@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { loadActivePlanId, loadPlan, loadPlans, saveActivePlanId, savePlan, savePlans } from '../utils/storage'
 import { normalizeSplitEvents } from '../utils/stockSplits'
-import { normalizeMarket } from '../utils/marketPrecision'
+import { normalizeMarket, roundPrice } from '../utils/marketPrecision'
 
 const defaultPlan = null
 const OPEN_ENDED_PLACEHOLDER_PERIODS = 9999
@@ -35,15 +35,26 @@ function normalizePlan(plan) {
   if (!plan) return null
 
   const budgetMode = plan.budgetMode === 'open-ended' ? 'open-ended' : 'fixed'
+  const market = normalizeMarket(plan.market)
 
   return {
     ...createEmptyPlan(),
     ...plan,
     assets: Array.isArray(plan.assets)
-      ? plan.assets.filter((asset) => asset && typeof asset === 'object')
+      ? plan.assets
+        .filter((asset) => asset && typeof asset === 'object')
+        .map((asset) => ({
+          ...asset,
+          ...(Object.prototype.hasOwnProperty.call(asset, 'initialAverageCost')
+            ? { initialAverageCost: roundPrice(asset.initialAverageCost, market) }
+            : {}),
+          ...(Object.prototype.hasOwnProperty.call(asset, 'initialAverageCostOriginal')
+            ? { initialAverageCostOriginal: roundPrice(asset.initialAverageCostOriginal, market) }
+            : {}),
+        }))
       : [],
     splitEvents: normalizeSplitEvents(plan.splitEvents),
-    market: normalizeMarket(plan.market),
+    market,
     budgetMode,
     reserveRatio: budgetMode === 'open-ended' ? 0 : clampReserveRatio(plan.reserveRatio),
     periodicTarget: Number(plan.periodicTarget) || 0,

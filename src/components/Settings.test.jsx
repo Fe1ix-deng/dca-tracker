@@ -25,6 +25,16 @@ describe('Settings helpers', () => {
     expect(form.market).toBe('CN')
   })
 
+  it('normalizes initial average cost using the selected market precision', () => {
+    expect(normalizeFormPlan({
+      market: 'CN',
+      assets: [{ ticker: '600519', initialAverageCost: 12.3456 }],
+    }).assets[0].initialAverageCost).toBe('12.345')
+    expect(normalizeFormPlan({
+      assets: [{ ticker: 'QLD', initialAverageCost: 12.345 }],
+    }).assets[0].initialAverageCost).toBe('12.34')
+  })
+
   it('aligns the asset-weight status text and value on a shared baseline', () => {
     const stylesheet = readFileSync(new URL('../index.css', import.meta.url), 'utf8')
 

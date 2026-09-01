@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { rebuildPlanState, stateNeedsRebuild } from './App'
+import { calculatePortfolioCostBasis } from './utils/portfolioCost'
 
 describe('rebuildPlanState', () => {
   const plan = {
@@ -140,6 +141,51 @@ describe('rebuildPlanState', () => {
     }])
 
     expect(cnSplitRecords[0].assets[0].adjustedPrice).toBe(6.173)
+  })
+
+  it('preserves CN initial cost precision through split-adjusted rebuilds', () => {
+    const cnPlan = {
+      ...plan,
+      market: 'CN',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      currentPeriod: 0,
+      assets: [{
+        ...plan.assets[0],
+        currentShares: 1,
+        initialShares: 1,
+        initialSharesOriginal: 1,
+        initialAverageCost: 12.345,
+        initialAverageCostOriginal: 12.345,
+      }],
+      splitEvents: [{
+        id: 'split-cn-cost',
+        ticker: 'QLD',
+        effectiveDate: '2026-02-01',
+        newShares: 2,
+        oldShares: 1,
+      }],
+    }
+
+    const { nextPlan, nextRecords } = rebuildPlanState(cnPlan, [])
+
+    expect(nextPlan.assets[0].initialAverageCostOriginal).toBe(12.345)
+    expect(nextPlan.assets[0].initialAverageCost).toBe(6.173)
+
+    const cnRecord = {
+      ...firstRecord,
+      date: '2026-01-15T00:00:00.000Z',
+      assets: [{ ...firstRecord.assets[0], price: 12.345, actualShares: 0.113 }],
+    }
+    const rebuilt = rebuildPlanState(cnPlan, [cnRecord])
+    const adjustedAsset = rebuilt.nextRecords[0].assets[0]
+
+    expect(adjustedAsset.adjustedPrice).toBe(6.173)
+    expect(adjustedAsset.adjustedActualAmount).toBe(1.39)
+    expect(calculatePortfolioCostBasis(rebuilt.nextPlan.assets, rebuilt.nextRecords)).toEqual({
+      costBasis: 13.74,
+      hasKnownCost: true,
+    })
+    expect(nextRecords).toEqual([])
   })
 
   it('stores VA history with tracked and total pre-buy values', () => {

@@ -118,8 +118,8 @@ export function rebuildPlanState(plan, records, sourceRecords = records) {
   const initialAverageCostMap = new Map(plan.assets.map((asset) => {
     const factor = getSplitFactor(asset.ticker, planBasisDate, splitEvents, asOfDate)
     const originalCost = asset.initialAverageCostOriginal !== undefined
-      ? Number(asset.initialAverageCostOriginal) || 0
-      : Number(asset.initialAverageCost) || 0
+      ? roundPrice(asset.initialAverageCostOriginal, plan)
+      : roundPrice(asset.initialAverageCost, plan)
     return [asset.ticker, adjustHoldingForSplit(initialSharesMap.get(asset.ticker) || 0, originalCost, factor)]
   }))
   const assetSharesMap = new Map(plan.assets.map((asset) => [asset.ticker, initialSharesMap.get(asset.ticker) || 0]))
@@ -173,6 +173,7 @@ export function rebuildPlanState(plan, records, sourceRecords = records) {
       const splitFactor = getSplitFactor(asset.ticker, recordDate, splitEvents, asOfDate)
       const adjustedAsset = adjustAssetForSplit({ ...asset, actualAmount }, splitFactor)
       const adjustedPrice = roundPrice(adjustedAsset.adjustedPrice, plan)
+      const adjustedActualAmount = roundToTwo(adjustedAsset.adjustedShares * adjustedAsset.adjustedPrice)
       const nextShares = roundToTwo(previousShares + actualShares)
 
       assetSharesMap.set(asset.ticker, nextShares)
@@ -190,7 +191,7 @@ export function rebuildPlanState(plan, records, sourceRecords = records) {
         actualAmount,
         adjustedShares: adjustedAsset.adjustedShares,
         adjustedPrice,
-        adjustedActualAmount: roundToTwo(adjustedAsset.adjustedShares * adjustedPrice),
+        adjustedActualAmount,
         splitFactor,
       }
     })
@@ -216,8 +217,8 @@ export function rebuildPlanState(plan, records, sourceRecords = records) {
       ...asset,
       initialSharesOriginal: roundToTwo(initialSharesMap.get(asset.ticker) || 0),
       initialShares: roundToTwo(initialAverageCostMap.get(asset.ticker)?.shares || 0),
-      initialAverageCostOriginal: Number(asset.initialAverageCostOriginal ?? asset.initialAverageCost) || 0,
-      initialAverageCost: roundToTwo(initialAverageCostMap.get(asset.ticker)?.averageCost || 0),
+      initialAverageCostOriginal: roundPrice(asset.initialAverageCostOriginal ?? asset.initialAverageCost, plan),
+      initialAverageCost: roundPrice(initialAverageCostMap.get(asset.ticker)?.averageCost || 0, plan),
       currentShares: roundToTwo((Number(assetSharesMap.get(asset.ticker)) || 0) * getSplitFactorBetween(asset.ticker, holdingBasisDate, asOfDate, splitEvents)),
     })),
   }
