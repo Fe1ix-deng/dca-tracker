@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.5.0 - 2026-09-01
+
+### Added
+- Added a plan-level US or A-share market selector with market-aware price precision.
+- Added Chinese and English interface switching with persisted language preference.
+
+### Changed
+- A-share price inputs, quotes, history, and rebuilt calculations now preserve three decimal places while US plans retain two-decimal behavior.
+- Updated the release notice summary available from the top bell.
+
 ## 2.4.2 - 2026-08-18
 
 ### Added

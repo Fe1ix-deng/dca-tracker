@@ -1,41 +1,58 @@
-Status: DONE_WITH_CONCERNS
+# Task 3 Report: Market-Aware Price Inputs and Quotes
 
-Implemented Task 3 CSS token and responsive palette styling.
+## Files changed
 
-Files changed:
-- src/index.css: five accent token families, mono light surface tokens, split theme control, popover, swatch, selected/focus states, and compact mobile touch-target rules.
-- src/theme.tokens.test.js: contract tests for the five selectors and confirmed brighter mono light values.
+- `src/components/OperationPanel.jsx`
+- `src/components/OperationPanel.test.jsx`
+- `src/components/History.jsx`
+- `src/components/History.test.jsx`
+- `src/hooks/useQuote.js`
+- `src/hooks/useQuote.test.js`
+- `src/services/marketQuotes.js`
+- `src/services/marketQuotes.test.js`
+- `api/quotes.js`
+- `api/quotes.test.js`
 
-Tests:
-- `npx vitest run src/theme.tokens.test.js src/components/Layout.theme.test.js src/hooks/useTheme.test.js`: 9/9 passed.
-- `npm run build`: passed.
-- `npm test`: 94/99 passed; five existing Dashboard.layout.test.js assertions fail against unrelated pre-existing Dashboard/Layout worktree changes (metric removal, chart removal, allocation table, and layout contract). These failures were not caused by the accent token CSS and must remain for the user's existing changes to resolve.
+## Implementation
 
-Self-review:
-- Accent selectors preserve semantic positive/negative/warning/info tokens.
-- Mono light values are exactly surface 241 241 238, panel 250 250 247, line 221 221 218.
-- Compact theme and arrow controls are 44px; menu options are 44px minimum.
+- `fetchQuote(ticker, marketOrPlan)` rounds returned prices through `roundPrice`, preserving two-decimal US behavior and enabling three-decimal CN behavior.
+- The quote API now validates finite positive values without applying an unconditional `toFixed(2)`.
+- `fetchMarketQuotes` converts valid quote prices to numbers without reducing precision.
+- OperationPanel price input and auto-fetch display use market-aware normalization/formatting and pass `plan.market` to quote fetching.
+- History price drafts, edit input handling, and rebuilt edited records use the plan market; share and amount rules remain unchanged.
 
-Commit pending after controller review of the unrelated baseline failures.
+## Verification
 
-Review follow-up fixes:
-- Anchored `.theme-accent-menu` above the theme control with `bottom: calc(100% + .5rem)` and `width: min(15rem, calc(100vw - 1.5rem))` so it remains visible in compact layouts.
-- Removed conflicting Tailwind sizing, hover, text-color, and swatch utilities from `Layout.jsx`; dedicated CSS now guarantees 44px controls/options and the specified accent states and 1rem swatches.
-- Preserved unrelated `ReleaseNotice` and Dashboard worktree changes.
+Red phase:
 
-Verification:
-- `npx vitest run src/theme.tokens.test.js src/components/Layout.theme.test.js src/hooks/useTheme.test.js`: 3 files, 9 tests passed.
-- `npm run build`: passed (`vite build`, 1691 modules transformed).
+```text
+npm test -- src/hooks/useQuote.test.js src/services/marketQuotes.test.js src/components/OperationPanel.test.jsx src/components/History.test.jsx api/quotes.test.js
+4 failed, 1 passed; 4 tests failed as expected for missing CN precision behavior.
+```
 
-Review-fix verification (2026-08-12):
-- Added exact unthemed `:root[data-accent='amber']`, `:root[data-accent='green']`, `:root[data-accent='rose']`, and `:root[data-accent='mono']` defaults; existing light/dark selectors remain later in the cascade and override them.
-- Removed the conflicting JSX `flex` utility from the `.theme-control-actions` wrapper so its component CSS grid applies directly.
-- `npx vitest run src/theme.tokens.test.js src/components/Layout.theme.test.js src/hooks/useTheme.test.js`: 3 files, 9 tests passed.
-- `npm run build`: passed (`vite build`, 1691 modules transformed).
+Focused green phase:
 
-Final review fixes (2026-08-12):
-- Added a scoped `.theme-control .theme-toggle` tokenized rule so the main theme button uses `--color-text-rgb`, `--color-panel-rgb`, and `--color-line-rgb` in both light and dark modes while preserving compact dimensions.
-- Split selected accent options from hover/focus: selected options use a borderless 12% accent background; hover/focus use a 10% accent background with an accent border.
-- `npx vitest run src/theme.tokens.test.js src/components/Layout.theme.test.js src/hooks/useTheme.test.js`: 3 files, 11 tests passed.
-- `npm test`: 24 files, 103 tests passed.
-- `npm run build`: passed (`vite build`, 1691 modules transformed).
+```text
+npm test -- src/hooks/useQuote.test.js src/services/marketQuotes.test.js src/components/OperationPanel.test.jsx src/components/History.test.jsx api/quotes.test.js
+Test Files  5 passed (5)
+Tests       17 passed (17)
+```
+
+Full suite:
+
+```text
+npm test
+Test Files  28 passed (28)
+Tests       154 passed (154)
+```
+
+`git diff --check` completed without findings.
+
+## Commit
+
+`41711a0 feat: support market-aware price inputs and quotes`
+
+## Concerns
+
+- `fetchMarketQuotes` now omits invalid/non-positive quote entries; this preserves the existing usable-quote contract and lets callers fall back to manual input.
+- The API remains market-agnostic by design; market-specific rounding occurs in `fetchQuote`, where the requested plan market is available.
