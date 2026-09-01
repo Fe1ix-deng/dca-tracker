@@ -37,7 +37,7 @@ export function normalizeOperationPrice(value, marketOrPlan) {
   return normalizePriceInput(value, marketOrPlan)
 }
 
-function formatPriceDisplay(value, marketOrPlan) {
+export function formatOperationPrice(value, marketOrPlan) {
   const numeric = Number(value)
   return Number.isFinite(numeric) ? formatPrice(numeric, marketOrPlan) : ''
 }
@@ -192,7 +192,7 @@ export default function OperationPanel({ plan, records, onSaveRecord, onNavigate
     if (typeof result.price === 'number') {
       updateAssetState(ticker, {
         loading: false,
-        price: formatPriceDisplay(result.price, plan.market),
+        price: formatOperationPrice(result.price, plan.market),
         priceSource: 'auto',
         fetchError: '',
       })
@@ -370,7 +370,7 @@ export default function OperationPanel({ plan, records, onSaveRecord, onNavigate
                         }
 
                         updateAssetState(asset.ticker, {
-                          price: formatPriceDisplay(asset.price, plan.market),
+                          price: formatOperationPrice(asset.price, plan.market),
                         })
                       }}
                       className="operation-field operation-price-field financial-input"

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getActualSharesForDecision, normalizeOperationPrice } from './OperationPanel'
+import { formatOperationPrice, getActualSharesForDecision, normalizeOperationPrice } from './OperationPanel'
 
 describe('OperationPanel helpers', () => {
   it('uses suggested shares when the user has not manually edited actual shares', () => {
@@ -22,5 +22,11 @@ describe('OperationPanel helpers', () => {
 
   it('normalizes a CN operation price to three decimals', () => {
     expect(normalizeOperationPrice('12.34567', { market: 'CN' })).toBe('12.345')
+  })
+
+  it('formats visible operation prices by market precision', () => {
+    expect(formatOperationPrice(12.345, { market: 'CN' })).toBe('12.345')
+    expect(formatOperationPrice(100, { market: 'US' })).toBe('100')
+    expect(formatOperationPrice(100, { market: 'US' })).not.toContain('100.000')
   })
 })

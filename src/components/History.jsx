@@ -21,13 +21,9 @@ function formatMoney(value) {
   }).format(Number(value) || 0)
 }
 
-function formatMoneyPrecise(value) {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(Number(value) || 0)
+export function formatHistoryPrice(value, marketOrPlan) {
+  const numeric = Number(value)
+  return Number.isFinite(numeric) ? formatPrice(numeric, marketOrPlan) : ''
 }
 
 function formatDate(value) {
@@ -108,7 +104,7 @@ export function createHistoryEditDraft(record, marketOrPlan) {
     note: record.note || '',
     assets: record.assets.map((asset) => ({
       ticker: asset.ticker,
-      price: Number.isFinite(Number(asset.price)) ? formatPrice(asset.price, market) : '',
+      price: Number.isFinite(Number(asset.price)) ? formatHistoryPrice(asset.price, market) : '',
       actualShares: formatNumericInput(asset.actualShares),
     })),
   }
@@ -551,7 +547,7 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
                             </div>
                             <div className="grid gap-2 text-right">
                               <p className="text-sm text-muted-foreground">
-                                操作价格 <span className="data-subtle">{formatMoneyPrecise(asset.price)}</span>
+                                操作价格 <span className="data-subtle">{formatHistoryPrice(asset.price, plan)}</span>
                               </p>
                               <p className="text-sm text-muted-foreground">
                                 目标值 <span className="data-subtle">{formatMoney(asset.targetValue)}</span>
@@ -593,7 +589,7 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
                           </div>
                           {adjusted.hasAdjustment ? (
                             <div className="mt-3 rounded-md border border-accent/20 bg-accent/10 px-3 py-3 text-sm text-textSoft">
-                              拆股调整后口径：{adjusted.shares} 股 · {formatMoneyPrecise(adjusted.price)}/股
+                              拆股调整后口径：{adjusted.shares} 股 · {formatHistoryPrice(adjusted.price, plan)}/股
                             </div>
                           ) : null}
                         </div>

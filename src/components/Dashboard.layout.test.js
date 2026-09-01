@@ -168,4 +168,17 @@ describe('dashboard metric rendering', () => {
     expect(markup).toContain('最近投入')
     expect(markup).not.toContain('剩余可投')
   })
+
+  it('renders CN prices with three decimals and US prices without padded zeros', () => {
+    const cnMarkup = renderToStaticMarkup(createElement(Dashboard, {
+      plan: { ...plan, market: 'CN', assets: [{ ticker: '600519', weight: 1, currentShares: 3 }] },
+      records: [{ ...createRecord(1), assets: [{ ticker: '600519', price: 12.345 }] }],
+      onNavigate: () => {},
+    }))
+    expect(cnMarkup).toContain('12.345')
+
+    const usMarkup = renderDashboard([createRecord(1)])
+    expect(usMarkup).toContain('100')
+    expect(usMarkup).not.toContain('100.000')
+  })
 })

@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { getAdjustedAssetDisplay, createHistoryEditDraft } from './History'
+import { getAdjustedAssetDisplay, createHistoryEditDraft, formatHistoryPrice } from './History'
 
 describe('History helpers', () => {
   it('uses adjusted values for display only when a split factor exists', () => {
@@ -30,5 +30,11 @@ describe('History helpers', () => {
     })
 
     expect(draft.assets[0].price).toBe('12.345')
+  })
+
+  it('formats visible history prices by market precision', () => {
+    expect(formatHistoryPrice(12.345, { market: 'CN' })).toBe('12.345')
+    expect(formatHistoryPrice(100, { market: 'US' })).toBe('100')
+    expect(formatHistoryPrice(100, { market: 'US' })).not.toContain('100.000')
   })
 })

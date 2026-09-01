@@ -5,6 +5,7 @@ import { fetchMarketQuotes } from '../services/marketQuotes'
 import { getLastRecordedPrices, getQuoteDisplayState, resolveMarketPrices } from '../utils/marketSnapshot'
 import { formatScheduleDate, getNextContributionDate } from '../utils/contributionSchedule'
 import { calculatePortfolioCostBasis } from '../utils/portfolioCost'
+import { formatPrice, roundPrice } from '../utils/marketPrecision'
 
 function formatMoney(value) {
   return new Intl.NumberFormat('en-US', {
@@ -158,7 +159,9 @@ export default function Dashboard({ plan, records, onNavigate }) {
   const latestPeriodAmount = Number(latestRecord.totalActualAmount) || 0
   const recordedPriceMap = getLastRecordedPrices(planRecords)
   const marketPriceMap = resolveMarketPrices(plan.assets, recordedPriceMap, quoteSnapshot.quotes)
-  const latestPriceMap = Object.fromEntries(Object.entries(marketPriceMap).map(([ticker, quote]) => [ticker, quote.price]))
+  const latestPriceMap = Object.fromEntries(
+    Object.entries(marketPriceMap).map(([ticker, quote]) => [ticker, roundPrice(Number(quote.price) || 0, plan)]),
+  )
   const quoteDisplayState = getQuoteDisplayState({
     loading: quoteSnapshot.loading,
     error: quoteSnapshot.error,
@@ -211,6 +214,7 @@ export default function Dashboard({ plan, records, onNavigate }) {
       shares: Number(asset.currentShares) || 0,
       actualWeight,
       targetWeight,
+      price,
       value,
       weightGap: Number((actualWeight - targetWeight).toFixed(2)),
     }
@@ -373,7 +377,10 @@ export default function Dashboard({ plan, records, onNavigate }) {
           <div className="dashboard-allocation-table-body">
             {currentWeightData.map((asset) => (
               <div key={asset.name} className="dashboard-allocation-table-row">
-                <span className="data-value text-sm">{asset.name}</span>
+                <span className="data-value text-sm">
+                  {asset.name}
+                  <span className="mt-1 block text-xs font-normal text-muted-foreground">价格 {formatPrice(asset.price, plan)}</span>
+                </span>
                 <span className="data-subtle">{formatShares(asset.shares)} 股</span>
                 <span className="data-subtle">{asset.actualWeight}% / {asset.targetWeight}%</span>
                 <span className={`data-subtle ${getGapToneClass(asset.weightGap)}`}>
