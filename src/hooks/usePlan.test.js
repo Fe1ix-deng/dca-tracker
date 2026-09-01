@@ -4,8 +4,8 @@ import * as usePlanModule from './usePlan'
 describe('normalizePlanState', () => {
   it('defaults legacy plans without a market to US', () => {
     const state = usePlanModule.normalizePlanState?.([
-      { id: 'legacy-plan', name: 'Legacy plan', assets: [] },
-    ], 'legacy-plan')
+      { id: 'legacy', assets: [] },
+    ])
 
     expect(state?.plans[0]?.market).toBe('US')
   })

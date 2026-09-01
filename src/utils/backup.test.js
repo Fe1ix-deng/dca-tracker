@@ -37,6 +37,15 @@ describe('buildBackupPayload', () => {
 })
 
 describe('parseBackupPayload', () => {
+  it('preserves a plan market through a serialized backup round-trip', () => {
+    const plan = { id: 'cn-plan', name: 'China plan', market: 'CN', assets: [] }
+    const payload = buildBackupPayload(plan, [plan], [])
+    const parsed = backupModule.parseBackupPayload?.(JSON.parse(JSON.stringify(payload)))
+
+    expect(parsed?.plans[0]?.market).toBe('CN')
+    expect(parsed?.plan?.market).toBe('CN')
+  })
+
   it('normalizes a multi-plan backup and preserves the active plan', () => {
     const parsed = backupModule.parseBackupPayload?.({
       plans: [{ id: 'plan-a' }, { id: 'plan-b' }],
