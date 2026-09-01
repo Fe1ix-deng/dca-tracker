@@ -2,6 +2,10 @@ import { useCallback, useEffect, useState } from 'react'
 import { fetchMarketQuotes } from '../services/marketQuotes'
 import { roundPrice } from '../utils/marketPrecision'
 
+export function normalizeManualPrice(value, marketOrPlan) {
+  return roundPrice(value, marketOrPlan)
+}
+
 export async function fetchQuote(ticker, marketOrPlan) {
   const symbol = String(ticker || '').trim().toUpperCase()
   if (!symbol) {
@@ -37,7 +41,7 @@ export async function fetchQuote(ticker, marketOrPlan) {
 
 export function useQuote(symbol, manualPrice, marketOrPlan) {
   const [state, setState] = useState({
-    price: Number(manualPrice) || 0,
+    price: normalizeManualPrice(manualPrice, marketOrPlan),
     source: manualPrice ? 'manual' : 'idle',
     error: '',
     loading: false,
@@ -46,7 +50,7 @@ export function useQuote(symbol, manualPrice, marketOrPlan) {
   const refreshQuote = useCallback(async () => {
     if (!symbol) {
       setState({
-        price: Number(manualPrice) || 0,
+        price: normalizeManualPrice(manualPrice, marketOrPlan),
         source: 'manual',
         error: '缺少 ticker，请手动输入价格。',
         loading: false,
@@ -73,7 +77,7 @@ export function useQuote(symbol, manualPrice, marketOrPlan) {
     }
 
     setState({
-      price: Number(manualPrice) || 0,
+      price: normalizeManualPrice(manualPrice, marketOrPlan),
       source: 'manual',
       error: result.error || '获取失败，请手动输入。',
       loading: false,
@@ -87,7 +91,7 @@ export function useQuote(symbol, manualPrice, marketOrPlan) {
     async function run() {
       if (!symbol) {
         setState({
-          price: Number(manualPrice) || 0,
+          price: normalizeManualPrice(manualPrice, marketOrPlan),
           source: 'manual',
           error: '缺少 ticker，请手动输入价格。',
           loading: false,
@@ -114,7 +118,7 @@ export function useQuote(symbol, manualPrice, marketOrPlan) {
       }
 
       setState({
-        price: Number(manualPrice) || 0,
+        price: normalizeManualPrice(manualPrice, marketOrPlan),
         source: 'manual',
         error: result.error || '获取失败，请手动输入。',
         loading: false,

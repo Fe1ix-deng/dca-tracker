@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import * as marketQuotes from '../services/marketQuotes'
-import { fetchQuote } from './useQuote'
+import { fetchQuote, normalizeManualPrice } from './useQuote'
 
 describe('fetchQuote', () => {
   afterEach(() => {
@@ -55,5 +55,12 @@ describe('fetchQuote', () => {
       price: null,
       error: '网络异常，无法获取最新行情。',
     })
+  })
+})
+
+describe('normalizeManualPrice', () => {
+  it('rounds manual fallback prices using the plan market precision', () => {
+    expect(normalizeManualPrice('12.3456', 'CN')).toBe(12.346)
+    expect(normalizeManualPrice('12.3456', 'US')).toBe(12.35)
   })
 })
