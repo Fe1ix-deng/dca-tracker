@@ -16,10 +16,12 @@ describe('operation commit card layout', () => {
     expect(operationSource).not.toContain('xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.42fr)]')
   })
 
-  it('labels VA tracked value separately from the full holding value', () => {
+  it('keeps VA metric cards focused on labels and values', () => {
     expect(operationSource).toContain('计划内当前市值')
-    expect(operationSource).toContain('不含计划创建前持仓')
-    expect(operationSource).toContain('全部持仓价值')
+    expect(operationSource).not.toContain('不含计划创建前持仓')
+    expect(operationSource).not.toContain('买入后计划内持仓应达到')
+    expect(operationSource).not.toContain('目标值 − 当前计划内市值')
+    expect(operationSource).not.toContain('按当前价格换算')
   })
 
   it('defines responsive summary and submission footer behavior', () => {
