@@ -12,6 +12,7 @@ import {
 } from '../utils/vaCalc'
 import { fetchQuote } from '../hooks/useQuote'
 import { getBudgetLimitedShares, getRemainingDeployableBudget } from '../utils/budget'
+import { formatPrice, normalizePriceInput } from '../utils/marketPrecision'
 
 const decisionOptions = [
   { value: 'normal', label: '正常执行' },
@@ -32,9 +33,13 @@ function roundToTwo(value) {
   return Number((Number(value) || 0).toFixed(2))
 }
 
-function formatPriceDisplay(value) {
+export function normalizeOperationPrice(value, marketOrPlan) {
+  return normalizePriceInput(value, marketOrPlan)
+}
+
+function formatPriceDisplay(value, marketOrPlan) {
   const numeric = Number(value)
-  return Number.isFinite(numeric) ? numeric.toFixed(2) : ''
+  return Number.isFinite(numeric) ? formatPrice(numeric, marketOrPlan) : ''
 }
 
 function getDecisionButtonClass(active) {
@@ -182,12 +187,12 @@ export default function OperationPanel({ plan, records, onSaveRecord, onNavigate
 
   const handleAutoFetch = async (ticker) => {
     updateAssetState(ticker, { loading: true, fetchError: '' })
-    const result = await fetchQuote(ticker)
+    const result = await fetchQuote(ticker, plan.market)
 
     if (typeof result.price === 'number') {
       updateAssetState(ticker, {
         loading: false,
-        price: formatPriceDisplay(result.price),
+        price: formatPriceDisplay(result.price, plan.market),
         priceSource: 'auto',
         fetchError: '',
       })
@@ -358,14 +363,14 @@ export default function OperationPanel({ plan, records, onSaveRecord, onNavigate
                       step="0.01"
                       value={asset.price}
                       placeholder="0"
-                      onChange={(event) => updateAssetState(asset.ticker, { price: normalizeNumericInput(event.target.value), priceSource: 'manual', fetchError: '' })}
+                      onChange={(event) => updateAssetState(asset.ticker, { price: normalizeOperationPrice(event.target.value, plan.market), priceSource: 'manual', fetchError: '' })}
                       onBlur={() => {
                         if (asset.price === '') {
                           return
                         }
 
                         updateAssetState(asset.ticker, {
-                          price: formatPriceDisplay(asset.price),
+                          price: formatPriceDisplay(asset.price, plan.market),
                         })
                       }}
                       className="operation-field operation-price-field financial-input"

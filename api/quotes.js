@@ -14,7 +14,7 @@ function normalizeSymbols(value) {
 
 function parsePrice(value) {
   const price = Number.parseFloat(value)
-  return Number.isFinite(price) && price > 0 ? Number(price.toFixed(2)) : null
+  return Number.isFinite(price) && price > 0 ? price : null
 }
 
 async function fetchProviderQuote(symbol, apiKey) {

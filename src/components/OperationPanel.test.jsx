@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getActualSharesForDecision } from './OperationPanel'
+import { getActualSharesForDecision, normalizeOperationPrice } from './OperationPanel'
 
 describe('OperationPanel helpers', () => {
   it('uses suggested shares when the user has not manually edited actual shares', () => {
@@ -18,5 +18,9 @@ describe('OperationPanel helpers', () => {
       actualSharesInput: null,
       suggestedShares: 3,
     })).toBe(0)
+  })
+
+  it('normalizes a CN operation price to three decimals', () => {
+    expect(normalizeOperationPrice('12.34567', { market: 'CN' })).toBe('12.345')
   })
 })

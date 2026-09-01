@@ -6,6 +6,18 @@ function normalizeSymbols(symbols) {
   )]
 }
 
+function normalizeQuotes(value) {
+  if (!value || typeof value !== 'object') return {}
+
+  return Object.fromEntries(
+    Object.entries(value).flatMap(([symbol, quote]) => {
+      const price = Number.parseFloat(quote?.price)
+      if (!Number.isFinite(price) || price <= 0) return []
+      return [[symbol, { ...quote, price }]]
+    }),
+  )
+}
+
 export async function fetchMarketQuotes(symbols) {
   const normalizedSymbols = normalizeSymbols(symbols)
 
@@ -18,7 +30,7 @@ export async function fetchMarketQuotes(symbols) {
     const data = await response.json()
 
     return {
-      quotes: data?.quotes && typeof data.quotes === 'object' ? data.quotes : {},
+      quotes: normalizeQuotes(data?.quotes),
       asOf: typeof data?.asOf === 'string' ? data.asOf : '',
       error: response.ok ? '' : data?.error || '行情服务暂时不可用。',
     }

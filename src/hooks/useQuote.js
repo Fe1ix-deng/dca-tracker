@@ -1,12 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { fetchMarketQuotes } from '../services/marketQuotes'
+import { roundPrice } from '../utils/marketPrecision'
 
-function roundQuotePrice(value) {
-  const numeric = Number.parseFloat(value)
-  return Number.isFinite(numeric) ? Number(numeric.toFixed(2)) : null
-}
-
-export async function fetchQuote(ticker) {
+export async function fetchQuote(ticker, marketOrPlan) {
   const symbol = String(ticker || '').trim().toUpperCase()
   if (!symbol) {
     return {
@@ -17,7 +13,8 @@ export async function fetchQuote(ticker) {
 
   try {
     const result = await fetchMarketQuotes([symbol])
-    const roundedPrice = roundQuotePrice(result.quotes?.[symbol]?.price)
+    const numericPrice = Number.parseFloat(result.quotes?.[symbol]?.price)
+    const roundedPrice = Number.isFinite(numericPrice) ? roundPrice(numericPrice, marketOrPlan) : null
 
     if (roundedPrice === null) {
       return {
@@ -38,7 +35,7 @@ export async function fetchQuote(ticker) {
   }
 }
 
-export function useQuote(symbol, manualPrice) {
+export function useQuote(symbol, manualPrice, marketOrPlan) {
   const [state, setState] = useState({
     price: Number(manualPrice) || 0,
     source: manualPrice ? 'manual' : 'idle',
@@ -63,7 +60,7 @@ export function useQuote(symbol, manualPrice) {
       error: '',
     }))
 
-    const result = await fetchQuote(symbol)
+    const result = await fetchQuote(symbol, marketOrPlan)
 
     if (typeof result.price === 'number') {
       setState({
@@ -82,7 +79,7 @@ export function useQuote(symbol, manualPrice) {
       loading: false,
     })
     return null
-  }, [manualPrice, symbol])
+  }, [manualPrice, marketOrPlan, symbol])
 
   useEffect(() => {
     let active = true
@@ -103,7 +100,7 @@ export function useQuote(symbol, manualPrice) {
         loading: true,
       }))
 
-      const result = await fetchQuote(symbol)
+      const result = await fetchQuote(symbol, marketOrPlan)
       if (!active) return
 
       if (typeof result.price === 'number') {
@@ -129,7 +126,7 @@ export function useQuote(symbol, manualPrice) {
     return () => {
       active = false
     }
-  }, [manualPrice, symbol])
+  }, [manualPrice, marketOrPlan, symbol])
 
   return {
     ...state,

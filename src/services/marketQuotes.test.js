@@ -35,4 +35,15 @@ describe('fetchMarketQuotes', () => {
       error: '行情服务暂时不可用。',
     })
   })
+
+  it('returns numeric quote prices without forcing two-decimal precision', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({ quotes: { '600519': { price: '12.3456' } } }),
+    })
+
+    await expect(fetchMarketQuotes(['600519'])).resolves.toMatchObject({
+      quotes: { '600519': { price: 12.3456 } },
+    })
+  })
 })

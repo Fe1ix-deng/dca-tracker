@@ -3,6 +3,7 @@ import { ChevronDown, ChevronUp, Download, Pencil, Trash2 } from 'lucide-react'
 import { formatNumericInput, normalizeNumericInput, toNumberOrFallback } from '../utils/numericInput'
 import { downloadFile } from '../utils/download'
 import BackupImportButton from './BackupImportButton'
+import { formatPrice, normalizePriceInput, roundPrice } from '../utils/marketPrecision'
 
 const filters = [
   { value: 'all', label: '全部' },
@@ -100,13 +101,14 @@ function toCsv(records) {
   return [header, ...rows].map((row) => row.join(',')).join('\n')
 }
 
-function createEditDraft(record) {
+export function createHistoryEditDraft(record, marketOrPlan) {
+  const market = marketOrPlan ?? record?.market
   return {
     tag: record.tag,
     note: record.note || '',
     assets: record.assets.map((asset) => ({
       ticker: asset.ticker,
-      price: formatNumericInput(asset.price),
+      price: Number.isFinite(Number(asset.price)) ? formatPrice(asset.price, market) : '',
       actualShares: formatNumericInput(asset.actualShares),
     })),
   }
@@ -187,7 +189,7 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
   const startEditing = (record) => {
     setExpandedId(record.id)
     setEditingId(record.id)
-    setEditDraft(createEditDraft(record))
+    setEditDraft(createHistoryEditDraft(record, plan))
   }
 
   const cancelEditing = () => {
@@ -205,7 +207,7 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
   const buildEditedRecord = (record, draft) => {
     const nextAssets = record.assets.map((asset) => {
       const patch = draft.assets.find((item) => item.ticker === asset.ticker)
-      const price = roundToTwo(toNumberOrFallback(patch?.price, asset.price))
+      const price = roundPrice(toNumberOrFallback(patch?.price, asset.price), plan)
       const actualShares = roundToTwo(toNumberOrFallback(patch?.actualShares, 0))
       return {
         ...asset,
@@ -459,8 +461,11 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
                                   inputMode="decimal"
                                   step="0.01"
                                   value={draftAsset.price}
-                                  onChange={(event) => updateDraftAsset(asset.ticker, { price: normalizeNumericInput(event.target.value) })}
-                                  onBlur={() => updateDraftAsset(asset.ticker, { price: formatNumericInput(draftAsset.price) })}
+                                  onChange={(event) => updateDraftAsset(asset.ticker, { price: normalizePriceInput(event.target.value, plan) })}
+                                  onBlur={() => {
+                                    if (draftAsset.price === '') return
+                                    updateDraftAsset(asset.ticker, { price: formatPrice(toNumberOrFallback(draftAsset.price, 0), plan) })
+                                  }}
                                   className="surface-input financial-input"
                                 />
                               </label>

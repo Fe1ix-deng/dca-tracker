@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { getAdjustedAssetDisplay } from './History'
+import { getAdjustedAssetDisplay, createHistoryEditDraft } from './History'
 
 describe('History helpers', () => {
   it('uses adjusted values for display only when a split factor exists', () => {
@@ -21,5 +21,14 @@ describe('History helpers', () => {
     const emptyStateBranch = source.match(/if \(!plan\) \{([\s\S]*?)\n  \}\n\n  return/)?.[1] ?? ''
 
     expect(emptyStateBranch).toContain('<BackupImportButton')
+  })
+
+  it('preserves three decimal places in a CN history price draft', () => {
+    const draft = createHistoryEditDraft({
+      market: 'CN',
+      assets: [{ ticker: '600519', price: 12.345, actualShares: 1 }],
+    })
+
+    expect(draft.assets[0].price).toBe('12.345')
   })
 })

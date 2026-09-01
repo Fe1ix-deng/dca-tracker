@@ -64,6 +64,19 @@ describe('quotes API', () => {
     expect(fetchSpy).toHaveBeenCalledTimes(2)
   })
 
+  it('preserves provider precision instead of forcing two decimals', async () => {
+    process.env.TWELVE_DATA_API_KEY = 'test-key'
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      json: async () => ({ price: '12.3456' }),
+    })
+    const response = createResponse()
+
+    await handler({ method: 'GET', query: { symbols: '600519' } }, response)
+
+    expect(response.statusCode).toBe(200)
+    expect(response.body.quotes).toEqual({ '600519': { price: 12.3456 } })
+  })
+
   it('returns a configuration error without calling the provider', async () => {
     delete process.env.TWELVE_DATA_API_KEY
     delete process.env.VITE_TWELVE_DATA_KEY
