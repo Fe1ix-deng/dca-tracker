@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.5.1 - 2026-09-01
+
+### Changed
+- Removed repeated helper text from the operation page and fixed-budget history page so key data stays focused.
+
 ## 2.5.0 - 2026-09-01
 
 ### Added

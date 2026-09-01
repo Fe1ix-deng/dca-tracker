@@ -284,11 +284,11 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
           <div className="min-w-0">
             <p className="label">Execution Archive</p>
             <h2 className="section-title">{t('历史记录')}</h2>
-            <p className="muted-copy mt-3 max-w-2xl">
-              {isOpenEnded
-                ? t('无限定投模式下，所有记录会持续累积。这里更像一份执行台账，而不是列表堆叠。')
-                : t('固定预算模式下，你可以在这里回看每一期的投入、执行偏差和计划推进情况。')}
-            </p>
+            {isOpenEnded ? (
+              <p className="muted-copy mt-3 max-w-2xl">
+                {t('无限定投模式下，所有记录会持续累积。这里更像一份执行台账，而不是列表堆叠。')}
+              </p>
+            ) : null}
           </div>
 
           <div className="flex w-full flex-wrap gap-2 sm:w-auto">

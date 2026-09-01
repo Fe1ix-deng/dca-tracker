@@ -4,14 +4,12 @@ import packageMetadata from '../../package.json'
 import packageLock from '../../package-lock.json'
 
 describe('release notice visibility', () => {
-  it('publishes the complete 2.5.0 user-facing update summary', () => {
-    expect(CURRENT_RELEASE.version).toBe('2.5.0')
+  it('publishes the complete 2.5.1 user-facing update summary', () => {
+    expect(CURRENT_RELEASE.version).toBe('2.5.1')
     expect(CURRENT_RELEASE.date).toBe('2026-09-01')
 
     const summary = CURRENT_RELEASE.items.join(' ')
-    expect(summary).toContain('A 股')
-    expect(summary).toContain('中英文界面切换')
-    expect(summary).toContain('价格精度')
+    expect(summary).toContain('重复的说明文字')
   })
 
   it('keeps package metadata on the same release version', () => {

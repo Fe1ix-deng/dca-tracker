@@ -270,9 +270,6 @@ export default function OperationPanel({ plan, records, onSaveRecord, onNavigate
                   ? t('已完成 {periods} / {total} 期', { periods: totalPeriods, total: totalPeriods })
                   : t('第 {period} 期 / 共 {total} 期', { period: currentPeriod + 1, total: totalPeriods })}
             </h2>
-            <p className="muted-copy mt-3 max-w-2xl">
-              {t('先确认价格来源，再写入实际股数。每张标的卡都会同步展示目标、建议与最终执行金额。')}
-            </p>
           </div>
 
           <button
@@ -477,7 +474,6 @@ export default function OperationPanel({ plan, records, onSaveRecord, onNavigate
           <div className="min-w-0">
             <p className="label">Decision & Commit</p>
             <h3 className="section-title">{t('确认本期执行')}</h3>
-            <p className="muted-copy mt-3">{t('先标记本期执行决策，再补充备注，最后把整期记录写入历史。')}</p>
           </div>
           <span className={isReadyToConfirm ? 'badge-positive' : 'badge-neutral'} aria-live="polite">
             {isReadyToConfirm ? 'Ready' : 'Pending'}
@@ -534,16 +530,12 @@ export default function OperationPanel({ plan, records, onSaveRecord, onNavigate
             <p className="operation-commit-message operation-commit-message-warning">
               {t('本期实际投入不能超过剩余预算 {amount}。', { amount: formatMoney(remainingBudgetBefore) })}
             </p>
-          ) : !isReadyToConfirm ? (
-            <p className="operation-commit-message">
-              {t('先为全部标的填入价格，并等待自动获取完成后，再确认写入历史。')}
-            </p>
-          ) : (
+          ) : isReadyToConfirm ? (
             <p className="operation-commit-message operation-commit-message-ready">
               <CheckCircle2 size={15} />
               {t('所有价格已就绪，可以写入历史。')}
             </p>
-          )}
+          ) : null}
 
           <button
             type="button"
