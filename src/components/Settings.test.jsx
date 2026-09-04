@@ -85,4 +85,14 @@ describe('Settings helpers', () => {
     expect(settingsSource).toMatch(/function Settings\(\{[^}]*onImportBackup/)
     expect(settingsSource).toContain('<BackupImportButton')
   })
+
+  it('offers a confirmed delete action only for an existing plan', () => {
+    const settingsSource = readFileSync(new URL('./Settings.jsx', import.meta.url), 'utf8')
+
+    expect(settingsSource).toMatch(/function Settings\(\{[^}]*onDeletePlan/)
+    expect(settingsSource).toContain("window.confirm(t('确认删除计划" )
+    expect(settingsSource).toContain("onDeletePlan?.(plan.id)")
+    expect(settingsSource).toContain("{t('删除当前计划')}")
+    expect(settingsSource).toMatch(/\{plan \? \([\s\S]*?删除当前计划[\s\S]*?\) : null\}/)
+  })
 })

@@ -256,7 +256,7 @@ function rebuildStateAfterRecordEdit(plan, records, updatedRecord) {
 }
 
 export default function App() {
-  const { plan, plans, activePlanId, setActivePlan, replacePlan, replacePlans, resetPlan } = usePlan()
+  const { plan, plans, activePlanId, setActivePlan, replacePlan, replacePlans, removePlan, resetPlan } = usePlan()
   const { records, addRecord, replaceRecords } = useRecords()
   const { accent, setAccent, theme, toggleTheme } = useTheme()
   const [activeTab, setActiveTab] = useState('dashboard')
@@ -298,6 +298,18 @@ export default function App() {
     replacePlan(nextPlan)
     markDataChanged()
     setActiveTab('history')
+  }
+
+  const handleDeletePlan = (planId) => {
+    const targetPlan = plans.find((item) => item.id === planId)
+    if (!targetPlan) {
+      return
+    }
+
+    replaceRecords(records.filter((record) => record.planId !== planId))
+    removePlan(planId)
+    markDataChanged()
+    setActiveTab('settings')
   }
 
   const handleEditRecord = (updatedRecord) => {
@@ -366,6 +378,7 @@ export default function App() {
           onSavePlan={handleSavePlan}
           onSaveRecord={handleSaveRecord}
           onDeleteRecord={handleDeleteRecord}
+          onDeletePlan={handleDeletePlan}
           onEditRecord={handleEditRecord}
           onImportBackup={handleImportBackup}
           onClearAllData={handleClearAllData}
