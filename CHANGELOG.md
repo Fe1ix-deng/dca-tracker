@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.6.0 - 2026-09-04
+
+### Added
+- Added a dedicated current-plan deletion action in Settings.
+- Deleting a plan now removes its associated history while preserving other plans.
+
 ## 2.5.1 - 2026-09-01
 
 ### Changed

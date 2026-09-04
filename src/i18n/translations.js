@@ -288,6 +288,7 @@ export const englishTranslations = {
   '支持在没有计划时直接导入 JSON 备份，并恢复之前的计划和定投历史记录。': 'Import JSON backups without a plan and restore previous plans and contribution history.',
   '导入备份现在会完整替换当前计划列表，避免恢复时残留临时计划。': 'Backup imports now fully replace the current plan list to avoid leftover temporary plans.',
   '移除本期操作页和固定预算历史页中重复的说明文字，让关键数据更集中。': 'Removed repeated helper text from the operation page and fixed-budget history page to keep key data focused.',
+  '新增单独删除当前计划的入口，并同步清理该计划的历史记录。': 'Added a dedicated current-plan deletion action that also removes its history.',
   '支持在计划级别选择美股或 A 股，并按市场规则保留价格精度。': 'Choose US or A-share markets per plan and preserve market-specific price precision.',
   'A 股价格输入、行情报价、历史记录和重建计算支持三位小数。': 'A-share price inputs, quotes, history, and rebuilt calculations support three decimal places.',
   '新增中英文界面切换，语言选择会在刷新后保留。': 'Added a Chinese and English interface switch that persists after refresh.',

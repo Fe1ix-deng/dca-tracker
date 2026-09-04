@@ -4,12 +4,13 @@ import packageMetadata from '../../package.json'
 import packageLock from '../../package-lock.json'
 
 describe('release notice visibility', () => {
-  it('publishes the complete 2.5.1 user-facing update summary', () => {
-    expect(CURRENT_RELEASE.version).toBe('2.5.1')
-    expect(CURRENT_RELEASE.date).toBe('2026-09-01')
+  it('publishes the complete 2.6.0 user-facing update summary', () => {
+    expect(CURRENT_RELEASE.version).toBe('2.6.0')
+    expect(CURRENT_RELEASE.date).toBe('2026-09-04')
 
     const summary = CURRENT_RELEASE.items.join(' ')
     expect(summary).toContain('重复的说明文字')
+    expect(summary).toContain('单独删除当前计划')
   })
 
   it('keeps package metadata on the same release version', () => {
