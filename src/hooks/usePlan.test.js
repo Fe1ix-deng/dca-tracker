@@ -53,3 +53,42 @@ describe('normalizePlanState', () => {
     expect(state?.activePlanId).toBe('plan-a')
   })
 })
+
+describe('removePlanState', () => {
+  it('removes a non-active plan without changing the active id', () => {
+    const state = usePlanModule.removePlanState?.({
+      plans: [{ id: 'a' }, { id: 'b' }],
+      activePlanId: 'b',
+    }, 'a')
+
+    expect(state).toEqual({
+      plans: [{ id: 'b' }],
+      activePlanId: 'b',
+    })
+  })
+
+  it('falls back to the first remaining plan when removing the active plan', () => {
+    const state = usePlanModule.removePlanState?.({
+      plans: [{ id: 'a' }, { id: 'b' }],
+      activePlanId: 'a',
+    }, 'a')
+
+    expect(state?.activePlanId).toBe('b')
+  })
+
+  it('clears the active id when removing the last plan', () => {
+    expect(usePlanModule.removePlanState?.({
+      plans: [{ id: 'a' }],
+      activePlanId: 'a',
+    }, 'a')).toEqual({
+      plans: [],
+      activePlanId: null,
+    })
+  })
+
+  it('ignores an unknown plan id', () => {
+    const state = { plans: [{ id: 'a' }], activePlanId: 'a' }
+
+    expect(usePlanModule.removePlanState?.(state, 'missing')).toBe(state)
+  })
+})

@@ -87,6 +87,27 @@ export function normalizePlanState(nextPlans, requestedActivePlanId = null) {
   }
 }
 
+export function removePlanState(current, planId) {
+  const targetPlanId = String(planId || '')
+  const targetIndex = current.plans.findIndex((item) => String(item.id) === targetPlanId)
+  if (!targetPlanId || targetIndex === -1) {
+    return current
+  }
+
+  const plans = current.plans.filter((item) => String(item.id) !== targetPlanId)
+  const removingActivePlan = String(current.activePlanId) === targetPlanId
+  const activePlanId = removingActivePlan
+    ? plans[0]?.id || null
+    : plans.some((item) => String(item.id) === String(current.activePlanId))
+      ? current.activePlanId
+      : plans[0]?.id || null
+
+  return {
+    plans,
+    activePlanId,
+  }
+}
+
 function loadPlanState() {
   const storedPlans = loadPlans().map(normalizePlan).filter(Boolean)
   const storedLegacyPlan = normalizePlan(loadPlan())
@@ -150,6 +171,18 @@ export function usePlan() {
     })
   }
 
+  const removePlan = (planId) => {
+    setState((current) => {
+      const nextState = removePlanState(current, planId)
+      if (nextState === current) {
+        return current
+      }
+
+      persistPlanState(nextState.plans, nextState.activePlanId)
+      return nextState
+    })
+  }
+
   const setActivePlan = (nextActivePlanId) => {
     setState((current) => {
       const safeActivePlanId = current.plans.some((item) => item.id === nextActivePlanId)
@@ -178,6 +211,7 @@ export function usePlan() {
       setActivePlan,
       replacePlan,
       replacePlans,
+      removePlan,
       resetPlan,
       defaultPlan,
       createEmptyPlan,
