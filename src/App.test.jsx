@@ -433,3 +433,16 @@ describe('backup import wiring', () => {
     expect(importHandler).not.toContain('nextPlans.forEach')
   })
 })
+
+describe('single-plan deletion wiring', () => {
+  it('removes a plan, its records, and returns to Settings', () => {
+    const source = readFileSync(new URL('./App.jsx', import.meta.url), 'utf8')
+    const deleteHandler = source.match(/const handleDeletePlan = \(planId\) => \{([\s\S]*?)\n  \}\n\n  const handleImportBackup/)?.[1] ?? ''
+
+    expect(deleteHandler).toContain('records.filter((record) => record.planId !== planId)')
+    expect(deleteHandler).toContain('removePlan(planId)')
+    expect(deleteHandler).toContain('markDataChanged()')
+    expect(deleteHandler).toContain("setActiveTab('settings')")
+    expect(source).toContain('onDeletePlan={handleDeletePlan}')
+  })
+})
