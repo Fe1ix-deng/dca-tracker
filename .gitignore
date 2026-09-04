@@ -11,3 +11,4 @@ config.toml
 .cursor/skills/
 .DS_Store
 .superpowers/
+.worktrees/
