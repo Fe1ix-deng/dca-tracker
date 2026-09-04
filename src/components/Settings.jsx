@@ -179,7 +179,7 @@ export function getSavedReserveRatio(isOpenEnded, reserveRatio) {
   return clampReserveRatio(reserveRatio ?? 0.2)
 }
 
-export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData, onImportBackup }) {
+export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData, onImportBackup, onDeletePlan }) {
   const { t } = useI18n()
   const [form, setForm] = useState(() => normalizeFormPlan(plan))
   const [showAssetForm, setShowAssetForm] = useState(false)
@@ -401,6 +401,21 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData,
     setEstimatedRange(null)
   }
 
+  const handleDeletePlan = () => {
+    if (!plan?.id) {
+      return
+    }
+
+    const confirmed = window.confirm(t('确认删除计划“{name}”？该计划及其历史记录将被永久删除，无法恢复。', {
+      name: plan.name || t('未命名计划'),
+    }))
+    if (!confirmed) {
+      return
+    }
+
+    onDeletePlan?.(plan.id)
+  }
+
   const handleClearAll = () => {
     const confirmed = window.confirm(t('此操作将清除所有计划和历史记录，无法恢复，确认继续？'))
     if (!confirmed) {
@@ -449,6 +464,16 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData,
                 className="control-button"
               >
                 {t('填写新计划')}
+              </button>
+              <button
+                type="button"
+                onClick={handleDeletePlan}
+                className="control-button-danger"
+                aria-label={t('删除当前计划')}
+                title={t('删除当前计划')}
+              >
+                <Trash2 size={16} aria-hidden="true" />
+                {t('删除当前计划')}
               </button>
             </div>
           ) : null}

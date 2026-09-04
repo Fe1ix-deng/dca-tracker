@@ -163,6 +163,8 @@ export const englishTranslations = {
   '当前筛选条件下还没有记录': 'No records match the current filter',
   '计划设置': 'Plan settings',
   '填写新计划': 'Create a new plan',
+  '删除当前计划': 'Delete current plan',
+  '确认删除计划“{name}”？该计划及其历史记录将被永久删除，无法恢复。': 'Delete plan "{name}"? This plan and its history will be permanently deleted and cannot be recovered.',
   '撤销修改': 'Discard changes',
   '计划身份': 'Plan identity',
   '名称': 'Name',
