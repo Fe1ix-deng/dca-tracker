@@ -1,0 +1,16 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+
+# Sitemaps
+Sitemap: https://dca.020023.xyz/sitemap.xml
+Sitemap: https://dca-tracker-steel.vercel.app/sitemap.xml
+
+# Crawl-delay for polite crawling
+Crawl-delay: 1
+
+# Block common bad bots (optional)
+User-agent: AhrefsBot
+User-agent: SemrushBot
+User-agent: DotBot
+Crawl-delay: 10

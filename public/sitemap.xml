@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+
+  <!-- Main Page -->
+  <url>
+    <loc>https://dca.020023.xyz/</loc>
+    <lastmod>2026-09-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://dca.020023.xyz/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://dca.020023.xyz/" />
+  </url>
+
+  <!-- GitHub Repository -->
+  <url>
+    <loc>https://github.com/Fe1ix-deng/dca-tracker</loc>
+    <lastmod>2026-09-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- English README -->
+  <url>
+    <loc>https://github.com/Fe1ix-deng/dca-tracker/blob/main/README.en.md</loc>
+    <lastmod>2026-09-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- Documentation -->
+  <url>
+    <loc>https://github.com/Fe1ix-deng/dca-tracker/blob/main/CHANGELOG.md</loc>
+    <lastmod>2026-09-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
+</urlset>

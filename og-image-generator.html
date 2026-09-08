@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OG Image Generator - DCA Tracker</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f5f5;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    canvas {
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      background: white;
+      display: block;
+      margin: 20px auto;
+    }
+    .controls {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    button {
+      background: #0F131C;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-right: 10px;
+    }
+    button:hover {
+      background: #1a2332;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 8px;
+      margin: 8px 0;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    label {
+      font-weight: 600;
+      display: block;
+      margin-top: 12px;
+    }
+    .preview-info {
+      background: #e3f2fd;
+      padding: 12px;
+      border-radius: 4px;
+      margin-top: 12px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎨 DCA Tracker - Open Graph 图片生成器</h1>
+
+    <div class="controls">
+      <h3>方案 A：应用截图 + 文字说明</h3>
+
+      <label>主标题</label>
+      <input type="text" id="title" value="DCA Tracker" />
+
+      <label>副标题</label>
+      <input type="text" id="subtitle" value="美股定投记录与复盘工具" />
+
+      <label>功能点 1</label>
+      <input type="text" id="feature1" value="✓ 支持 DCA 定额 & VA 价值平均策略" />
+
+      <label>功能点 2</label>
+      <input type="text" id="feature2" value="✓ 自动计算买入金额，可视化投资轨迹" />
+
+      <label>功能点 3</label>
+      <input type="text" id="feature3" value="✓ 数据本地存储，无需注册账号" />
+
+      <label>网址</label>
+      <input type="text" id="url" value="dca.020023.xyz" />
+
+      <button onclick="generateImage()">生成预览图</button>
+      <button onclick="downloadImage()">下载 PNG (1200x630)</button>
+
+      <div class="preview-info">
+        💡 提示：生成后右键保存图片，或点击下载按钮。建议上传真实截图到左侧区域以获得更好效果。
+      </div>
+    </div>
+
+    <canvas id="canvas" width="1200" height="630"></canvas>
+
+    <div class="controls">
+      <h3>方案 B：纯文字极简版（备用）</h3>
+      <button onclick="generateMinimal()">生成极简版</button>
+      <button onclick="downloadImage()">下载 PNG</button>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    function generateImage() {
+      // Clear canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Background gradient
+      const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+      gradient.addColorStop(0, '#0F131C');
+      gradient.addColorStop(1, '#1a2332');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Left side - Screenshot placeholder
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+      ctx.fillRect(40, 40, 650, 550);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(40, 40, 650, 550);
+
+      // Placeholder text
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+      ctx.font = '20px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('📊 应用截图区域', 365, 300);
+      ctx.fillText('(建议替换为真实截图)', 365, 330);
+
+      // Right side - Text content
+      const rightX = 740;
+      const startY = 120;
+
+      // Title
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 56px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(document.getElementById('title').value, rightX, startY);
+
+      // Subtitle
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+      ctx.font = '28px sans-serif';
+      ctx.fillText(document.getElementById('subtitle').value, rightX, startY + 60);
+
+      // Divider line
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(rightX, startY + 90);
+      ctx.lineTo(rightX + 400, startY + 90);
+      ctx.stroke();
+
+      // Features
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+      ctx.font = '22px sans-serif';
+      const features = [
+        document.getElementById('feature1').value,
+        document.getElementById('feature2').value,
+        document.getElementById('feature3').value
+      ];
+
+      features.forEach((feature, index) => {
+        const lines = wrapText(ctx, feature, 400);
+        lines.forEach((line, lineIndex) => {
+          ctx.fillText(line, rightX, startY + 140 + (index * 70) + (lineIndex * 30));
+        });
+      });
+
+      // URL
+      ctx.fillStyle = '#60A5FA';
+      ctx.font = 'bold 24px sans-serif';
+      ctx.fillText(document.getElementById('url').value, rightX, startY + 380);
+
+      // Badge
+      ctx.fillStyle = 'rgba(96, 165, 250, 0.2)';
+      ctx.fillRect(rightX, startY + 410, 180, 40);
+      ctx.fillStyle = '#60A5FA';
+      ctx.font = 'bold 18px sans-serif';
+      ctx.fillText('免费开源', rightX + 50, startY + 437);
+    }
+
+    function generateMinimal() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Background gradient
+      const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+      gradient.addColorStop(0, '#0F131C');
+      gradient.addColorStop(1, '#1a2332');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Center content
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+
+      // Main title
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 72px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('DCA Tracker', centerX, centerY - 80);
+
+      // Divider
+      ctx.strokeStyle = '#60A5FA';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(centerX - 300, centerY - 30);
+      ctx.lineTo(centerX + 300, centerY - 30);
+      ctx.stroke();
+
+      // Subtitle
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+      ctx.font = '32px sans-serif';
+      ctx.fillText('让美股定投更科学', centerX, centerY + 30);
+
+      // Features
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+      ctx.font = '24px sans-serif';
+      ctx.fillText('DCA & VA 策略  •  自动计算  •  本地存储', centerX, centerY + 90);
+
+      // URL
+      ctx.fillStyle = '#60A5FA';
+      ctx.font = 'bold 28px sans-serif';
+      ctx.fillText('dca.020023.xyz', centerX, centerY + 150);
+    }
+
+    function wrapText(ctx, text, maxWidth) {
+      const words = text.split(' ');
+      const lines = [];
+      let currentLine = '';
+
+      words.forEach(word => {
+        const testLine = currentLine + word + ' ';
+        const metrics = ctx.measureText(testLine);
+        if (metrics.width > maxWidth && currentLine !== '') {
+          lines.push(currentLine.trim());
+          currentLine = word + ' ';
+        } else {
+          currentLine = testLine;
+        }
+      });
+      lines.push(currentLine.trim());
+      return lines;
+    }
+
+    function downloadImage() {
+      const link = document.createElement('a');
+      link.download = 'og-image.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+
+    // Generate initial preview
+    generateImage();
+  </script>
+</body>
+</html>

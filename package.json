@@ -1,8 +1,41 @@
 {
   "name": "dca-tracker",
   "private": true,
-  "version": "2.6.0",
+  "version": "2.6.1",
   "type": "module",
+  "description": "A free investment tracking tool for US stock DCA and VA strategies. Automatically calculates buy amounts, visualizes portfolio trajectory, with local data storage.",
+  "keywords": [
+    "dca",
+    "dollar-cost-averaging",
+    "value-averaging",
+    "investment-tracker",
+    "portfolio-management",
+    "stock-investment",
+    "etf-investing",
+    "investment-tool",
+    "finance",
+    "react",
+    "vite",
+    "tailwindcss",
+    "data-visualization",
+    "investment-strategy",
+    "qqq",
+    "voo",
+    "spy"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Fe1ix-deng/dca-tracker.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Fe1ix-deng/dca-tracker/issues"
+  },
+  "homepage": "https://dca.020023.xyz",
+  "author": {
+    "name": "Fe1ix-deng",
+    "url": "https://github.com/Fe1ix-deng"
+  },
+  "license": "MIT",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

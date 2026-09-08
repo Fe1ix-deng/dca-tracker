@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.6.1 - 2026-09-08
+
+### Added
+- Added SEO metadata, Open Graph and Twitter card tags, structured data, robots.txt, sitemap.xml, and a social sharing preview image.
+- Added project metadata and a reusable Open Graph image generator.
+
 ## 2.6.0 - 2026-09-04
 
 ### Added
