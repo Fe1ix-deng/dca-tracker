@@ -7,6 +7,7 @@ import { formatScheduleDate, getNextContributionDate } from '../utils/contributi
 import { calculatePortfolioCostBasis } from '../utils/portfolioCost'
 import { formatPrice, roundPrice } from '../utils/marketPrecision'
 import { useI18n } from '../i18n/index.jsx'
+import FaqSummary from './FaqSummary'
 
 function formatMoney(value) {
   return new Intl.NumberFormat('en-US', {
@@ -123,13 +124,16 @@ export default function Dashboard({ plan, records, onNavigate }) {
 
   if (!plan) {
     return (
-      <section className="empty-state text-textSoft">
-        <p className="label">Overview</p>
-        <h2 className="empty-state-title">{t('还没有计划')}</h2>
-        <p className="body-copy mx-auto mt-3 max-w-xl">{t('先去设置页创建你的第一份定投计划，总览页会在这里呈现资产表现和预算状态。')}</p>
-        <button type="button" onClick={() => onNavigate('settings')} className="control-button-primary mt-6">
-          {t('去设置计划')}
-        </button>
+      <section className="section-shell">
+        <div className="empty-state text-textSoft">
+          <p className="label">Overview</p>
+          <h2 className="empty-state-title">{t('还没有计划')}</h2>
+          <p className="body-copy mx-auto mt-3 max-w-xl">{t('先去设置页创建你的第一份定投计划，总览页会在这里呈现资产表现和预算状态。')}</p>
+          <button type="button" onClick={() => onNavigate('settings')} className="control-button-primary mt-6">
+            {t('去设置计划')}
+          </button>
+        </div>
+        <FaqSummary onNavigate={onNavigate} />
       </section>
     )
   }
@@ -142,19 +146,22 @@ export default function Dashboard({ plan, records, onNavigate }) {
 
   if (!planRecords.length) {
     return (
-      <section className="empty-state">
-        <p className="label">Overview</p>
-        <h2 className="empty-state-title">{t('还没有操作记录')}</h2>
-        <p className="body-copy mx-auto mt-3 max-w-2xl">
-          {t('创建好计划后，前往“本期操作”录入第一期价格与买入股数，总览页会在这里呈现趋势、仓位和预算检查。')}
-        </p>
-        <button
-          type="button"
-          onClick={() => onNavigate('operation')}
-          className="control-button-primary mt-6"
-        >
-          {t('去完成第一期定投')}
-        </button>
+      <section className="section-shell">
+        <div className="empty-state">
+          <p className="label">Overview</p>
+          <h2 className="empty-state-title">{t('还没有操作记录')}</h2>
+          <p className="body-copy mx-auto mt-3 max-w-2xl">
+            {t('创建好计划后，前往“本期操作”录入第一期价格与买入股数，总览页会在这里呈现趋势、仓位和预算检查。')}
+          </p>
+          <button
+            type="button"
+            onClick={() => onNavigate('operation')}
+            className="control-button-primary mt-6"
+          >
+            {t('去完成第一期定投')}
+          </button>
+        </div>
+        <FaqSummary onNavigate={onNavigate} />
       </section>
     )
   }
@@ -401,6 +408,7 @@ export default function Dashboard({ plan, records, onNavigate }) {
           </div>
         </div>
         </article>
+      <FaqSummary onNavigate={onNavigate} />
     </section>
   )
 }

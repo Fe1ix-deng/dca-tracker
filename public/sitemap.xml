@@ -12,6 +12,16 @@
     <xhtml:link rel="alternate" hreflang="en" href="https://dca.020023.xyz/" />
   </url>
 
+  <!-- FAQ Page -->
+  <url>
+    <loc>https://dca.020023.xyz/faq</loc>
+    <lastmod>2026-09-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://dca.020023.xyz/faq" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://dca.020023.xyz/faq" />
+  </url>
+
   <!-- GitHub Repository -->
   <url>
     <loc>https://github.com/Fe1ix-deng/dca-tracker</loc>

@@ -5,6 +5,7 @@ import {
   ChevronDown,
   Download,
   History as HistoryIcon,
+  MessageCircleQuestion,
   Moon,
   Settings as SettingsIcon,
   SunMedium,
@@ -19,6 +20,7 @@ const navItems = [
   { key: 'operation', label: '本期操作', title: 'Operation', icon: WalletCards },
   { key: 'history', label: '历史', title: 'History', icon: HistoryIcon },
   { key: 'settings', label: '设置', title: 'Settings', icon: SettingsIcon },
+  { key: 'faq', label: 'FAQ', title: 'FAQ', icon: MessageCircleQuestion },
 ]
 
 const accentOptions = [
@@ -274,7 +276,7 @@ export default function Layout({
           <div className="brand-mark">DC</div>
           <div className="min-w-0">
             <p>Personal Console</p>
-            <h1>DCA Tracker</h1>
+            <h1>DCA Tracker · VA定投计算器</h1>
           </div>
         </div>
 

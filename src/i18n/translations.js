@@ -305,4 +305,10 @@ export const englishTranslations = {
   '最近一期实际投入。': 'Actual contribution in the latest period.',
   '持续投入中。': 'Contributions are ongoing.',
   '保留底仓 {amount}。': 'Cash reserve {amount}.',
+  'VA定投计算器常见问题': 'Value Averaging Calculator FAQ',
+  '了解 VA 定投怎么算、目标收益率如何设置、数据如何备份，以及多计划和 A 股支持情况。': 'Learn how value averaging works, how to set target returns, how backups work, and whether multiple plans and China A-shares are supported.',
+  '查看完整 FAQ': 'View full FAQ',
+  '集中解答 VA 价值平均策略、目标收益率、数据安全、备份恢复和多计划管理等常见问题。': 'Answers about value averaging, target returns, data safety, backup restoration, and managing multiple plans.',
+  '问题': 'Question',
+  '返回总览': 'Back to overview',
 }

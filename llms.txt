@@ -1,0 +1,19 @@
+# DCA Tracker
+
+> DCA Tracker is a free browser-based DCA and VA investment planning tool. It includes a VA定投计算器 for calculating value-averaging contribution targets, records portfolio execution history, and stores user data locally without requiring an account.
+
+## Core pages
+
+- Home and calculator: https://dca.020023.xyz/
+- VA and DCA FAQ: https://dca.020023.xyz/faq
+- GitHub repository: https://github.com/Fe1ix-deng/dca-tracker
+- Chinese project documentation: https://github.com/Fe1ix-deng/dca-tracker/blob/main/README.md
+- English project documentation: https://github.com/Fe1ix-deng/dca-tracker/blob/main/README.en.md
+
+## Key capabilities
+
+- DCA fixed-amount and VA value-averaging strategies
+- Suggested contribution and share calculations
+- Multiple investment plans and multi-asset portfolios
+- Local browser storage with JSON and CSV export
+- Chinese and English interfaces

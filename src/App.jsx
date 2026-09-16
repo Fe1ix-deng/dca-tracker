@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useMemo, useState } from 'react'
+import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react'
 import Layout from './components/Layout'
 import { getPeriodicAmount, getSuggestedShares as getDcaSuggestedShares } from './utils/dcaCalc'
 import { calcAllTargets, getRequiredInvestment, getSuggestedShares as getVaSuggestedShares, getTrackedShares } from './utils/vaCalc'
@@ -11,14 +11,17 @@ import { downloadBackupJson } from './utils/backup'
 import { roundPrice } from './utils/marketPrecision'
 import { adjustAssetForSplit, adjustHoldingForSplit, getSplitFactor, getSplitFactorBetween, normalizeSplitEvents } from './utils/stockSplits'
 import { useI18n } from './i18n/index.jsx'
+import { getPathForTab, getTabFromPath } from './utils/navigation'
 
 const Dashboard = lazy(() => import('./components/Dashboard'))
+const Faq = lazy(() => import('./components/Faq'))
 const History = lazy(() => import('./components/History'))
 const OperationPanel = lazy(() => import('./components/OperationPanel'))
 const Settings = lazy(() => import('./components/Settings'))
 
 const tabs = {
   dashboard: Dashboard,
+  faq: Faq,
   operation: OperationPanel,
   history: History,
   settings: Settings,
@@ -259,13 +262,32 @@ export default function App() {
   const { plan, plans, activePlanId, setActivePlan, replacePlan, replacePlans, removePlan, resetPlan } = usePlan()
   const { records, addRecord, replaceRecords } = useRecords()
   const { accent, setAccent, theme, toggleTheme } = useTheme()
-  const [activeTab, setActiveTab] = useState('dashboard')
+  const [activeTab, setActiveTab] = useState(() => (
+    typeof window === 'undefined' ? 'dashboard' : getTabFromPath(window.location.pathname)
+  ))
   const [backupPing, setBackupPing] = useState(0)
 
   const Screen = useMemo(() => tabs[activeTab], [activeTab])
   // backupPing forces a refresh after an export, since exporting doesn't
   // otherwise change `plan` or `records` and would leave a stale reminder.
   const backupStatus = useMemo(() => getBackupStatus(), [plan, records, backupPing])
+
+  const navigateTo = useCallback((nextTab) => {
+    const nextPath = getPathForTab(nextTab)
+    setActiveTab(nextTab)
+
+    if (window.location.pathname !== nextPath) {
+      window.history.pushState({ tab: nextTab }, '', nextPath)
+    }
+
+    document.querySelector('.app-scroll-area')?.scrollTo({ top: 0 })
+  }, [])
+
+  useEffect(() => {
+    const handlePopState = () => setActiveTab(getTabFromPath(window.location.pathname))
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
 
   useEffect(() => {
     if (!plan || !stateNeedsRebuild(plan, records)) {
@@ -282,14 +304,14 @@ export default function App() {
     replaceRecords(nextRecords)
     replacePlan(rebuiltPlan)
     markDataChanged()
-    setActiveTab('dashboard')
+    navigateTo('dashboard')
   }
 
   const handleSaveRecord = (record, nextPlan) => {
     addRecord(record)
     replacePlan(nextPlan)
     markDataChanged()
-    setActiveTab('history')
+    navigateTo('history')
   }
 
   const handleDeleteRecord = (recordId) => {
@@ -297,7 +319,7 @@ export default function App() {
     replaceRecords(nextRecords)
     replacePlan(nextPlan)
     markDataChanged()
-    setActiveTab('history')
+    navigateTo('history')
   }
 
   const handleDeletePlan = (planId) => {
@@ -309,7 +331,7 @@ export default function App() {
     replaceRecords(records.filter((record) => record.planId !== planId))
     removePlan(planId)
     markDataChanged()
-    setActiveTab('settings')
+    navigateTo('settings')
   }
 
   const handleEditRecord = (updatedRecord) => {
@@ -317,7 +339,7 @@ export default function App() {
     replaceRecords(nextRecords)
     replacePlan(nextPlan)
     markDataChanged()
-    setActiveTab('history')
+    navigateTo('history')
   }
 
   const handleImportBackup = (payload) => {
@@ -341,14 +363,14 @@ export default function App() {
 
     replaceRecords(nextRecords)
     replacePlans(nextPlans, nextActivePlanId)
-    setActiveTab(nextPlans.length ? 'history' : 'settings')
+    navigateTo(nextPlans.length ? 'history' : 'settings')
   }
 
   const handleClearAllData = () => {
     clearAll()
     replaceRecords([])
     resetPlan()
-    setActiveTab('settings')
+    navigateTo('settings')
   }
 
   const handleExportBackup = () => {
@@ -359,7 +381,7 @@ export default function App() {
   return (
     <Layout
       activeTab={activeTab}
-      onChangeTab={setActiveTab}
+      onChangeTab={navigateTo}
       plans={plans}
       activePlanId={activePlanId || ''}
       onChangeActivePlan={setActivePlan}
@@ -383,7 +405,7 @@ export default function App() {
           onImportBackup={handleImportBackup}
           onClearAllData={handleClearAllData}
           onExportBackup={handleExportBackup}
-          onNavigate={setActiveTab}
+          onNavigate={navigateTo}
         />
       </Suspense>
     </Layout>

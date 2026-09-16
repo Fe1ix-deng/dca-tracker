@@ -442,7 +442,7 @@ describe('single-plan deletion wiring', () => {
     expect(deleteHandler).toContain('records.filter((record) => record.planId !== planId)')
     expect(deleteHandler).toContain('removePlan(planId)')
     expect(deleteHandler).toContain('markDataChanged()')
-    expect(deleteHandler).toContain("setActiveTab('settings')")
+    expect(deleteHandler).toContain("navigateTo('settings')")
     expect(source).toContain('onDeletePlan={handleDeletePlan}')
   })
 })
