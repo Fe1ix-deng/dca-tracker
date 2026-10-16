@@ -2,6 +2,18 @@ const TWELVE_DATA_URL = 'https://api.twelvedata.com/price'
 const CACHE_TTL_MS = 60 * 1000
 const quoteCache = new Map()
 
+const RATE_LIMIT_WINDOW_MS = 60 * 1000
+const RATE_LIMIT_MAX_REQUESTS = 20
+const rateLimitHits = new Map()
+
+function isRateLimited(clientId) {
+  const now = Date.now()
+  const hits = (rateLimitHits.get(clientId) || []).filter((timestamp) => now - timestamp < RATE_LIMIT_WINDOW_MS)
+  hits.push(now)
+  rateLimitHits.set(clientId, hits)
+  return hits.length > RATE_LIMIT_MAX_REQUESTS
+}
+
 function normalizeSymbols(value) {
   const rawSymbols = Array.isArray(value) ? value.join(',') : String(value || '')
   return [...new Set(
@@ -55,6 +67,11 @@ export default async function handler(request, response) {
 
   // Keep existing Vercel deployments working while they migrate to the
   // server-only variable documented in .env.example.
+  const clientId = request.headers?.['x-forwarded-for']?.split(',')[0].trim() || request.socket?.remoteAddress || 'unknown'
+  if (isRateLimited(clientId)) {
+    return response.status(429).json({ error: '请求过于频繁，请稍后再试。' })
+  }
+
   const apiKey = process.env.TWELVE_DATA_API_KEY || process.env.VITE_TWELVE_DATA_KEY
   if (!apiKey) {
     return response.status(503).json({ error: '行情服务未配置。' })
