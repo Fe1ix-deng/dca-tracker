@@ -27,12 +27,12 @@ const budgetModeOptions = [
   {
     value: 'fixed',
     label: '固定预算',
-    description: '我有一笔闲钱，计划分 X 期投完。',
+    description: '固定总额，分期投入',
   },
   {
     value: 'open-ended',
     label: '无限定投',
-    description: '我用每期收入的一部分持续投入，没有固定终点。',
+    description: '持续投入，不设终点',
   },
 ]
 
@@ -378,11 +378,9 @@ export default function Settings({ plan, plans = [], records = [], assetIntegrit
       <div className="card p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="label">{t('计划设置')}</p>
+
             <h2 className="section-title">{t('计划设置')}</h2>
-            <p className="muted-copy mt-3 max-w-2xl">
-              {t('配置节奏、预算和资产权重。右侧检查面板会实时提示当前计划是否可以保存。')}
-            </p>
+
           </div>
 
           {plan ? (
@@ -420,7 +418,6 @@ export default function Settings({ plan, plans = [], records = [], assetIntegrit
             <div className="settings-section-header">
               <div>
                 <p className="mini-kicker">{t('计划身份')}</p>
-                <p className="mt-2 text-sm text-muted-foreground">{t('给这套执行参数一个清晰名称。')}</p>
               </div>
             </div>
             <label className="mt-4 block space-y-2">
@@ -453,7 +450,6 @@ export default function Settings({ plan, plans = [], records = [], assetIntegrit
             <div className="settings-section-header">
               <div>
                 <p className="mini-kicker">{t('预算模式')}</p>
-                <p className="mt-2 text-sm text-muted-foreground">{t('选择固定预算或长期持续投入。')}</p>
               </div>
             </div>
             <div className="mt-4 grid gap-3 md:grid-cols-2">
@@ -478,7 +474,6 @@ export default function Settings({ plan, plans = [], records = [], assetIntegrit
             <div className="settings-section-header">
               <div>
                 <p className="mini-kicker">{t('策略类型')}</p>
-                <p className="mt-2 text-sm text-muted-foreground">{t('VA 更强调路径控制，DCA 更强调稳定执行。')}</p>
               </div>
             </div>
             <div className="mt-4 grid gap-3 md:grid-cols-2">
@@ -495,8 +490,8 @@ export default function Settings({ plan, plans = [], records = [], assetIntegrit
                   <div className="text-sm font-medium text-white">{t(option.label)}</div>
                   <p className="mt-2 text-xs leading-6 text-muted-foreground">
                     {option.value === 'VA'
-                      ? t('根据市值与目标的差距决定每期投入多少，更适合严格控制执行路径。')
-                      : t('每期固定投入同样金额，执行简单，适合更长期的机械化定投。')}
+                      ? t('按目标市值补足差额')
+                      : t('每期投入固定金额')}
                   </p>
                 </label>
               ))}
@@ -652,21 +647,14 @@ export default function Settings({ plan, plans = [], records = [], assetIntegrit
                   </div>
                 ) : null}
               </div>
-            ) : (
-              <div className="settings-section">
-                <p className="mini-kicker">{t('目标年化收益率')}</p>
-                <p className="mt-4 text-sm leading-6 text-muted-foreground">
-                  {t('DCA 策略不需要设置目标年化收益率，重点是固定节奏与长期执行。')}
-                </p>
-              </div>
-            )}
+            ) : null}
           </div>
 
           <div className="settings-section">
             <div className="settings-section-header">
               <div>
                 <p className="mini-kicker">{t('资产配置')}</p>
-                <p className="mt-2 text-sm text-muted-foreground">{t('权重之和必须等于 100%，数字和 ticker 使用等宽排版。')}</p>
+                <p className="mt-2 text-sm text-muted-foreground">{t('权重合计须为 100%')}</p>
               </div>
               <button
                 type="button"
@@ -767,7 +755,7 @@ export default function Settings({ plan, plans = [], records = [], assetIntegrit
                       <div>
                         <label className="block text-sm">{t('资产代码 {index}', { index: index + 1 })}<input type="text" {...fieldProps('assets['+index+'].ticker')} aria-label={t('资产代码 {index}', {index:index+1})} value={asset.ticker} disabled={isProtected(asset) || isSaving} onChange={event=>updateAsset(asset.draftRowId,'ticker',event.target.value)} className="surface-input financial-input mt-2" /></label>
                         {nearbyError('assets['+index+'].ticker')}
-                        <p className="mt-1 text-xs text-muted-foreground">{asset.name}</p>
+                        {asset.name && asset.name.trim().toUpperCase() !== asset.ticker.trim().toUpperCase() ? <p className="mt-1 text-xs text-muted-foreground">{asset.name}</p> : null}
                       </div>
 
                       <button
@@ -783,8 +771,8 @@ export default function Settings({ plan, plans = [], records = [], assetIntegrit
                     </div>
 
                     {isProtected(asset) ? <p className="mt-3 text-sm text-muted-foreground">{t('此资产已有关联历史记录或拆合股事件，本阶段不能更改代码或删除，以免历史失去对应资产。')}</p> : null}
-                    <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_240px_240px]">
-                      <div>
+                    <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                      <div className="sm:col-span-2">
                         <div className="flex items-center justify-between gap-4">
                           <label htmlFor={`asset-weight-range-${index}`} className="text-sm text-muted-foreground">{t('已有资产权重')}</label>
                           <output htmlFor={`asset-weight-range-${index}`} className="data-value">{Math.round((Number(asset.weight) || 0) * 100)}%</output>
@@ -928,7 +916,7 @@ export default function Settings({ plan, plans = [], records = [], assetIntegrit
       </div>
 
       <aside className="card h-fit p-5 xl:sticky xl:top-5">
-        <p className="label">{t('保存前检查')}</p>
+
         <h3 className="section-title">{t('保存前检查')}</h3>
 
         <div className="mt-5 grid gap-4">

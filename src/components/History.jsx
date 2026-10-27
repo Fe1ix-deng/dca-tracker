@@ -155,7 +155,6 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
   const latestRecord = planRecords[0] || null
   const totalInvested = planRecords.reduce((sum, record) => sum + (Number(record.totalActualAmount) || 0), 0)
   const latestRecordTagLabel = latestRecord ? getFilterLabel(latestRecord.tag, t) : t('暂无记录')
-  const activeFilterLabel = getFilterLabel(activeFilter, t)
 
   const handleExportCsv = () => {
     if (!planRecords.length) return
@@ -266,7 +265,7 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
     return (
       <section className="section-shell">
         <div className="empty-state text-textSoft">
-          <p className="label">{t('历史记录')}</p>
+
           <h2 className="empty-state-title">{t('还没有计划')}</h2>
           <p className="body-copy mx-auto mt-3 max-w-xl">{t('请先创建计划，历史记录会在执行后自动累积。')}</p>
           <div className="mt-5 flex flex-wrap justify-center gap-2">
@@ -285,13 +284,9 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
       <div className="card p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
-            <p className="label">{t('历史记录')}</p>
+
             <h2 className="section-title">{t('历史记录')}</h2>
-            {isOpenEnded ? (
-              <p className="muted-copy mt-3 max-w-2xl">
-                {t('无限定投模式下，所有记录会持续累积。这里更像一份执行台账，而不是列表堆叠。')}
-              </p>
-            ) : null}
+
           </div>
 
           <div className="flex w-full flex-wrap gap-2 sm:w-auto">
@@ -320,12 +315,10 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
           <div className="surface-stat">
             <p className="mini-kicker">{t('记录数')}</p>
             <p className="mt-3 data-value text-xl">{planRecords.length}</p>
-            <p className="mt-2 text-xs text-muted-foreground">{t('当前计划累计期数')}</p>
           </div>
           <div className="surface-stat">
             <p className="mini-kicker">{t('累计投入')}</p>
             <p className="mt-3 data-value text-xl">{formatMoney(totalInvested, plan)}</p>
-            <p className="mt-2 text-xs text-muted-foreground">{t('所有记录的实际投入总和')}</p>
           </div>
           <div className="surface-stat">
             <p className="mini-kicker">{t('最近记录')}</p>
@@ -335,7 +328,6 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
           <div className="surface-stat">
             <p className="mini-kicker">{t('模式')}</p>
             <p className="mt-3 text-base font-medium text-white">{isOpenEnded ? t('无限定投') : t('固定预算')}</p>
-            <p className="mt-2 text-xs text-muted-foreground">{t('当前筛选 {filter}', { filter: activeFilterLabel })}</p>
           </div>
         </div>
 
@@ -391,9 +383,7 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
                       </div>
                     </div>
 
-                    <p className="mt-4 line-clamp-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-                      {record.note || t('本期未填写备注。')}
-                    </p>
+                    {record.note ? <p className="mt-4 line-clamp-2 max-w-3xl text-sm leading-6 text-muted-foreground">{record.note}</p> : null}
                   </div>
 
                   <div className="flex w-full flex-wrap justify-end gap-2 sm:w-auto">

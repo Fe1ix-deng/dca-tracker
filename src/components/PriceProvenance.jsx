@@ -1,9 +1,13 @@
 import {useI18n} from '../i18n/index.jsx'
 const sources={auto:'自动获取参考价','record-auto':'自动记录价格','record-manual':'手动记录价格','record-unknown':'记录价格（来源未知）',manual:'本次手动输入',missing:'暂无可用价格'}
-export default function PriceProvenance({snapshot,holding}){
+export default function PriceProvenance({snapshot,holding,compact=false}){
  const {t,language}=useI18n()
  if(!snapshot)return null
  const time=value=>{const date=new Date(value);return Number.isFinite(date.getTime())?new Intl.DateTimeFormat(language,{dateStyle:'medium',timeStyle:'short'}).format(date)+' · '+Intl.DateTimeFormat().resolvedOptions().timeZone:t('时间未知')}
+ if(compact)return <div className="mt-2 text-xs font-normal text-muted-foreground">
+  <p>{t(sources[snapshot.source]||sources.missing)}{snapshot.recordDate ? ' · '+snapshot.recordDate : snapshot.source==='auto' ? ' · '+t('可能延迟') : ''}</p>
+  {(!snapshot.reliable&&snapshot.reason==='日期或拆合股口径不明确')||holding?.reliable===false?<p className="text-warning">{t('不可可靠估值：日期或拆合股口径不明确。')}</p>:null}
+ </div>
  return <div className="mt-2 space-y-1 text-xs font-normal text-muted-foreground">
   <p>{t(sources[snapshot.source]||sources.missing)}</p>
   {snapshot.recordDate?<p>{t('采用记录执行日：{date}',{date:snapshot.recordDate})}</p>:null}

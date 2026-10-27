@@ -316,7 +316,6 @@ export default function Layout({
 
       <div className="mobile-topbar">
         <div className="min-w-0">
-          <p className="mobile-page-kicker">{t(activeItem.title)}</p>
           <h1 className="mobile-page-title">{t(activeItem.label)}</h1>
         </div>
         <div className="mobile-topbar-actions">

@@ -136,7 +136,6 @@ export default function Dashboard({ plan, records, onNavigate, asOfDate: provide
   const nextPeriodNumber = completedPeriods + 1
   const latestExecutionDate = latestRecord?.date || ''
   const nextContributionDate = contributionState.nextDate ? formatScheduleDate(contributionState.nextDate, language) : t(contributionState.status === 'completed' ? '计划已完成' : contributionState.status === 'limited' ? '已达到记录上限' : '日期未知，请检查最近记录')
-  const expectedProgressRatio = !isOpenEnded ? Math.min(completedPeriods / totalPeriods, 1) : 0
   let consecutivePeriods = 0
   for (let index = planRecords.length - 1; index >= 0; index -= 1) {
     const record = planRecords[index]
@@ -190,13 +189,12 @@ export default function Dashboard({ plan, records, onNavigate, asOfDate: provide
     {
       label: t('执行进度'),
       value: isOpenEnded ? t('第 {period} 期', { period: completedPeriods }) : `${completedPeriods}/${totalPeriods} ${t('期')}`,
-      detail: isOpenEnded ? t('持续投入中。') : `${t('已完成')} ${Math.round(expectedProgressRatio * 100)}%。`,
       tone: 'text-white',
     },
     {
       label: isOpenEnded ? t('最近投入') : t('剩余可投'),
       value: isOpenEnded ? formatMoney(latestPeriodAmount, plan) : formatMoney(remainingBudget, plan),
-      detail: isOpenEnded ? t('最近一期实际投入。') : t('保留底仓 {amount}。', { amount: formatMoney(reserveFloor, plan) }),
+      detail: isOpenEnded ? null : t('保留底仓 {amount}。', { amount: formatMoney(reserveFloor, plan) }),
       tone: 'text-white',
     },
   ]
@@ -230,8 +228,8 @@ export default function Dashboard({ plan, records, onNavigate, asOfDate: provide
           <aside className="dashboard-action-summary subtle-panel p-4">
             <div>
               <div className="min-w-0">
-                <p className="mini-kicker">{t('下一步操作')}</p>
-                <h3 className="mt-3 text-[1.05rem] font-semibold tracking-[-0.02em] text-white">{t('下一步操作')}</h3>
+
+                <h3 className="text-[1.05rem] font-semibold tracking-[-0.02em] text-white">{t('下一步操作')}</h3>
               </div>
             </div>
 
@@ -249,7 +247,7 @@ export default function Dashboard({ plan, records, onNavigate, asOfDate: provide
 
             {contributionState.status !== 'completed' && contributionState.status !== 'limited' ? <button type="button" onClick={() => onNavigate('operation')} className="control-button-primary dashboard-action-button w-full">
               {t('进入本期操作')} <ArrowRight size={16} />
-            </button> : <p className="text-sm text-muted-foreground">{nextContributionDate}</p>}
+            </button> : null}
           </aside>
         </div>
       </header>
@@ -257,8 +255,8 @@ export default function Dashboard({ plan, records, onNavigate, asOfDate: provide
       <article className="chart-card dashboard-execution-status min-w-0">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="label">{t('执行状态')}</p>
-            <h3 className="mt-3 text-[1.05rem] font-semibold tracking-[-0.02em] text-white">{t('计划状态')}</h3>
+
+            <h3 className="text-[1.05rem] font-semibold tracking-[-0.02em] text-white">{t('计划状态')}</h3>
           </div>
         </div>
         <div className="dashboard-execution-body mt-5">
@@ -285,9 +283,7 @@ export default function Dashboard({ plan, records, onNavigate, asOfDate: provide
             <p className="data-value text-sm">
               {consecutivePeriods > 0 ? t('已连续执行 {periods} 期', { periods: consecutivePeriods }) : t('等待首次执行')}
             </p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              {latestRecord.tag === 'paused' ? t('最近一期已暂停。') : consecutivePeriods > 0 ? t('当前没有漏投。') : t('还没有连续记录。')}
-            </p>
+            {latestRecord.tag === 'paused' ? <p className="mt-1 text-xs text-muted-foreground">{t('最近一期已暂停。')}</p> : null}
           </div>
         </div>
       </article>
@@ -295,8 +291,8 @@ export default function Dashboard({ plan, records, onNavigate, asOfDate: provide
       <article className="chart-card min-w-0">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="label">{t('仓位偏离')}</p>
-            <h3 className="mt-3 text-[1.05rem] font-semibold tracking-[-0.02em] text-white">{t('仓位诊断')}</h3>
+
+            <h3 className="text-[1.05rem] font-semibold tracking-[-0.02em] text-white">{t('仓位诊断')}</h3>
           </div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span className={quoteDisplayState.tone === 'fresh' ? 'text-positive' : quoteDisplayState.tone === 'stale' ? 'text-warning' : 'text-muted-foreground'}>
@@ -327,7 +323,7 @@ export default function Dashboard({ plan, records, onNavigate, asOfDate: provide
               <div key={asset.name} className="dashboard-allocation-table-row">
                 <span className="data-value text-sm">
                   {asset.name}
-                  <span className="mt-1 block text-xs font-normal text-muted-foreground">{t('价格')} {asset.price>0?formatPrice(asset.price, plan):'--'}</span><PriceProvenance snapshot={snapshots[canonicalTicker(asset.name)]} holding={holdings[canonicalTicker(asset.name)]}/>
+                  <span className="mt-1 block text-xs font-normal text-muted-foreground">{t('价格')} {asset.price>0?formatPrice(asset.price, plan):'--'}</span><PriceProvenance snapshot={snapshots[canonicalTicker(asset.name)]} holding={holdings[canonicalTicker(asset.name)]} compact/>
                 </span>
                 <span className="data-subtle">{asset.shares===null?'--':formatShares(asset.shares)} {t('股')}</span>
                 <span className="data-subtle">{asset.actualWeight===null?'--':asset.actualWeight+'%'} / {asset.targetWeight}%</span>

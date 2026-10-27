@@ -298,7 +298,6 @@ export default function OperationPanel({ plan, records, onSaveRecord, onNavigate
           <div className="surface-stat">
             <p className="mini-kicker">{t('上期记录')}</p>
             <p className="mt-3 data-value text-xl">{latestRecord ? String(latestRecord.date).slice(0, 10) : '--'}</p>
-            <p className="mt-2 text-xs text-muted-foreground">{latestRecord ? t('已有上一期参考') : t('这是首次执行记录')}</p>
           </div>
           <div className="surface-stat">
             <p className="mini-kicker">{t('标的数量')}</p>
@@ -310,7 +309,6 @@ export default function OperationPanel({ plan, records, onSaveRecord, onNavigate
             <p className="mt-3 data-value text-xl">
               {isOpenEnded ? formatMoney(plan.periodicTarget, plan) : t('固定预算')}
             </p>
-            <p className="mt-2 text-xs text-muted-foreground">{isOpenEnded ? t('目标投入参考值') : t('按总预算推进')}</p>
           </div>
         </div>
       </div>
@@ -328,23 +326,16 @@ export default function OperationPanel({ plan, records, onSaveRecord, onNavigate
                     <h3 className="data-value text-[1.5rem] font-semibold tracking-[-0.03em]">{asset.ticker}</h3>
                     <span className="operation-weight-chip">{Math.round((Number(asset.weight) || 0) * 100)}%</span>
                   </div>
-                  <p className="mt-2 text-sm text-muted-foreground">{asset.name}</p>
+                  {asset.name && asset.name.trim().toUpperCase() !== asset.ticker.trim().toUpperCase() ? <p className="mt-2 text-sm text-muted-foreground">{asset.name}</p> : null}
                 </div>
-                <span className={asset.priceSource === 'auto' ? 'operation-status-pill operation-status-pill-auto' : 'operation-status-pill operation-status-pill-manual'}>
-                  {t(asset.priceSource==='auto'?'自动价格':asset.priceSource==='manual'?'手动价格':'参考价格')}
-                </span>
+
               </div>
 
               <div className="operation-input-grid mt-6">
                 <div className="subtle-panel flex h-full flex-col p-4">
                   <div className="flex items-center justify-between gap-3">
-                    <p className="mini-kicker">{t('价格输入')}</p>
-                    {asset.loading ? (
-                      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                        <LoaderCircle size={13} className="animate-spin" />
-                        {t('获取中')}
-                      </span>
-                    ) : null}
+                    <p className="mini-kicker">{t('价格')}</p>
+
                   </div>
                   <label className="mt-4 flex-1">
                     <span className="sr-only">{asset.ticker} {t('操作价格')}</span>
@@ -361,7 +352,6 @@ export default function OperationPanel({ plan, records, onSaveRecord, onNavigate
                     />
                   </label>
                   <div className="mt-4 subtle-row operation-footer-row">
-                    <span className="operation-footer-label">{t('可手动输入')}</span>
                     <button
                       type="button"
                       onClick={() => handleAutoFetch(asset.ticker)}
@@ -372,7 +362,7 @@ export default function OperationPanel({ plan, records, onSaveRecord, onNavigate
                       {asset.loading ? t('获取中…') : t('自动获取价格')}
                     </button>
                   </div>
-                  <PriceProvenance snapshot={asset.snapshot} holding={asset.holding}/>
+                  <PriceProvenance snapshot={asset.snapshot} holding={asset.holding} compact/>
                   {asset.fetchError ? (
                     <p className="mt-3 rounded-md border border-negative/25 bg-negative/10 px-3 py-2 text-xs leading-5 text-negative">{t(asset.fetchError)}</p>
                   ) : null}
@@ -432,7 +422,6 @@ export default function OperationPanel({ plan, records, onSaveRecord, onNavigate
                 <div className="operation-accent-card p-4">
                   <p className="operation-metric-label">{t('建议买入股数')}</p>
                   <p className="operation-metric-value">{asset.suggestedSharesDisplay}</p>
-                  <p className="mt-2 text-xs text-muted-foreground">{t('支持碎股，实际成交以券商规则为准。')}</p>
                 </div>
               </div>
             </article>
@@ -444,7 +433,6 @@ export default function OperationPanel({ plan, records, onSaveRecord, onNavigate
         <div className="operation-commit-header">
           {/* Ready / Pending status copy is translated below. */}
           <div className="min-w-0">
-            <p className="label">{t('确认本期记录')}</p>
             <h3 className="section-title">{t('确认本期执行')}</h3>
           </div>
           <span className={isReadyToConfirm ? 'badge-positive' : 'badge-neutral'} aria-live="polite">
