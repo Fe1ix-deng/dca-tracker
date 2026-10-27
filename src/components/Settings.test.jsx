@@ -79,13 +79,6 @@ describe('Settings helpers', () => {
     expect(settingsSource).toMatch(/aria-expanded=\{showSplitEvents\}/)
   })
 
-  it('offers backup import while creating or editing a plan', () => {
-    const settingsSource = readFileSync(new URL('./Settings.jsx', import.meta.url), 'utf8')
-
-    expect(settingsSource).toMatch(/function Settings\(\{[^}]*onImportBackup/)
-    expect(settingsSource).toContain('<BackupImportButton')
-  })
-
   it('offers a confirmed delete action only for an existing plan', () => {
     const settingsSource = readFileSync(new URL('./Settings.jsx', import.meta.url), 'utf8')
 

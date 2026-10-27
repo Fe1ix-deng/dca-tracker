@@ -17,7 +17,7 @@ export function getPeriodicAmount(plan = {}, assetWeight = 0) {
 export function getSuggestedShares(periodicAmount, currentPrice) {
   const price = Number(currentPrice) || 0
   if (price <= 0) return 0
-  return Math.round((Number(periodicAmount) || 0) / price)
+  return Math.floor(Math.max(0, (Number(periodicAmount) || 0) / price) * 100) / 100
 }
 
 export function calculateDcaProjection({ amount = 0, price = 0 }) {

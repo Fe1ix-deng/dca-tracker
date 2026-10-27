@@ -90,18 +90,33 @@ describe('quotes API', () => {
     expect(fetchSpy).not.toHaveBeenCalled()
   })
 
-  it('uses the legacy Vite variable so existing deployments keep fetching quotes', async () => {
+  it('does not use the legacy Vite variable', async () => {
     delete process.env.TWELVE_DATA_API_KEY
     process.env.VITE_TWELVE_DATA_KEY = 'legacy-key'
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-      json: async () => ({ price: '92.19' }),
-    })
+    const fetchSpy = vi.spyOn(globalThis, 'fetch')
     const response = createResponse()
 
     await handler({ method: 'GET', query: { symbols: 'QLD' } }, response)
 
-    expect(response.statusCode).toBe(200)
-    expect(response.body.quotes).toEqual({ QLD: { price: 92.19 } })
-    expect(fetchSpy).toHaveBeenCalledWith(expect.stringContaining('apikey=legacy-key'))
+    expect(response.statusCode).toBe(503)
+    expect(fetchSpy).not.toHaveBeenCalled()
   })
+})
+
+it('rejects invalid or excessive ticker lists before provider calls', async () => {
+  process.env.TWELVE_DATA_API_KEY = 'test-key'
+  const fetchSpy = vi.spyOn(globalThis, 'fetch')
+  const response = createResponse()
+  await handler({ method: 'GET', query: { symbols: 'bad/ticker' } }, response)
+  expect(response.statusCode).toBe(400)
+  expect(fetchSpy).not.toHaveBeenCalled()
+})
+
+it('maps provider non-2xx responses to a safe upstream error', async () => {
+  process.env.TWELVE_DATA_API_KEY = 'test-key'
+  vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: false, status: 429, json: async () => ({ message: 'rate limit' }) })
+  const response = createResponse()
+  await handler({ method: 'GET', query: { symbols: 'QLD' } }, response)
+  expect(response.statusCode).toBe(502)
+  expect(response.body).toEqual({ error: '行情服务暂时不可用。' })
 })

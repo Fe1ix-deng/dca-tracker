@@ -82,6 +82,10 @@ npm run dev
 // 系统自动按权重分配每期投入金额
 ```
 
+### 部署说明
+
+行情接口 `api/quotes.js` 使用 Vercel Serverless Function 运行，只读取服务端环境变量 `TWELVE_DATA_API_KEY`。当前 `wrangler.jsonc` 仅配置 Cloudflare 静态 assets 和 SPA 回退，Cloudflare 静态部署不会执行 `api/quotes.js`；如部署到 Cloudflare，请另外创建 Workers/Pages Function 并配置同名环境变量，或继续使用 Vercel 提供行情接口。
+
 ### 自动行情获取（可选）
 
 配置 Twelve Data API Key 后，点击"自动获取价格"即可填入最新市价。未配置或接口失败时自动降级为手动输入，不影响核心功能。

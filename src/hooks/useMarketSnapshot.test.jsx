@@ -1,0 +1,13 @@
+// @vitest-environment jsdom
+import {renderHook,act,waitFor} from '@testing-library/react'
+import {it,expect,vi,afterEach} from 'vitest'
+import {useMarketSnapshot} from './useMarketSnapshot'
+import {healthyPlan,healthyRecord} from '../test/fixtures'
+afterEach(()=>vi.restoreAllMocks())
+it('retains old automatic value/time during failed refresh and gives manual clearing precedence over late responses',async()=>{
+ let finish;const fetch=vi.spyOn(globalThis,'fetch').mockResolvedValueOnce({ok:true,json:async()=>({quotes:{SPY:{price:150}}})}).mockImplementationOnce(()=>new Promise(resolve=>finish=resolve));const {result}=renderHook(()=>useMarketSnapshot({plan:healthyPlan,records:[healthyRecord],asOfDate:'2026-10-27'}));await waitFor(()=>expect(result.current.snapshots.SPY.source).toBe('auto'));const time=result.current.snapshots.SPY.lastSuccessfulFetchAt;let refresh;act(()=>{refresh=result.current.refresh()});expect(result.current.snapshots.SPY.price).toBe(150);expect(result.current.snapshots.SPY.lastSuccessfulFetchAt).toBe(time);await act(async()=>{finish({ok:false,json:async()=>({error:'failed'})});await refresh});expect(result.current.snapshots.SPY).toMatchObject({price:150,source:'auto',lastSuccessfulFetchAt:time,requestStatus:'failed'});
+ fetch.mockImplementationOnce(()=>new Promise(resolve=>finish=resolve));act(()=>{refresh=result.current.refresh()});act(()=>result.current.setManual('SPY',''));await act(async()=>{finish({ok:true,json:async()=>({quotes:{SPY:{price:999}}})});await refresh});expect(result.current.snapshots.SPY).toMatchObject({source:'missing',price:null,raw:''});fetch.mockResolvedValueOnce({ok:false,json:async()=>({})});await act(async()=>result.current.refresh(['SPY']));expect(result.current.snapshots.SPY.price).toBeNull();fetch.mockResolvedValueOnce({ok:true,json:async()=>({quotes:{SPY:{price:160}}})});await act(async()=>result.current.refresh(['SPY']));expect(result.current.snapshots.SPY).toMatchObject({source:'auto',price:160})
+})
+it('ignores an old plan request when a new plan is rendered',async()=>{
+ let finish;vi.spyOn(globalThis,'fetch').mockImplementationOnce(()=>new Promise(resolve=>finish=resolve)).mockResolvedValueOnce({ok:true,json:async()=>({quotes:{QQQ:{price:20}}})});const {result,rerender}=renderHook(({plan})=>useMarketSnapshot({plan,asOfDate:'2026-10-27'}),{initialProps:{plan:healthyPlan}});rerender({plan:{...healthyPlan,id:'other',assets:[{ticker:'QQQ',initialSharesOriginal:0,currentShares:0}]}});await waitFor(()=>expect(result.current.snapshots.QQQ.price).toBe(20));await act(async()=>finish({ok:true,json:async()=>({quotes:{SPY:{price:999}}})}));expect(result.current.snapshots.SPY).toBeUndefined();expect(result.current.snapshots.QQQ.price).toBe(20)
+})

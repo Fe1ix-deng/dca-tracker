@@ -1,5 +1,8 @@
 import { downloadFile } from './download'
 import { markBackedUp, STORAGE_KEYS } from './storage'
+import { validateAndNormalizeBackup } from './backupSchema'
+import { inspectAssetIntegrity } from './assetIntegrity'
+import { parseExecutionDate } from './executionDate'
 
 export const BACKUP_SCHEMA_VERSION = '2.0'
 
@@ -14,27 +17,13 @@ function safeParseJson(raw, fallback) {
 }
 
 export function parseBackupPayload(parsed) {
-  if (!parsed || typeof parsed !== 'object') {
-    return null
-  }
-
-  const nextPlans = Array.isArray(parsed.plans)
-    ? parsed.plans
-    : parsed.plan
-      ? [parsed.plan]
-      : []
-  const nextRecords = Array.isArray(parsed.records) ? parsed.records : []
-  const nextActivePlanId = parsed.activePlanId || nextPlans[0]?.id || null
-
-  if (!nextPlans.length && !nextRecords.length) {
-    return null
-  }
-
-  return {
-    plans: nextPlans,
-    plan: nextPlans[0] || null,
-    activePlanId: nextActivePlanId,
-    records: nextRecords,
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null
+  try {
+    const payload = parsed.version ? parsed : { ...parsed, version: BACKUP_SCHEMA_VERSION }
+    const normalized = validateAndNormalizeBackup(payload)
+    return normalized
+  } catch (error) {
+    throw error
   }
 }
 
@@ -47,13 +36,22 @@ export function buildBackupPayload(plan, plans, records) {
       ? [plan]
       : []
 
+  const integrity = inspectAssetIntegrity({ plans: safePlans, records: Array.isArray(records) ? records : [] })
+  if (integrity.issues.length) throw new Error('数据需要修复：正常备份不能包含损坏的资产关联。请导出原始恢复 JSON（不保证可直接导入）。')
+
+  const normalizedRecords = (Array.isArray(records) ? records : []).map((record, index) => {
+    const date = parseExecutionDate(record?.date)
+    if (!date) throw new Error(`记录 ${index + 1} 的执行日期无效，无法生成正常备份。请导出原始恢复 JSON。`)
+    return { ...record, date }
+  })
+
   return {
     version: BACKUP_SCHEMA_VERSION,
     exportedAt: new Date().toISOString(),
     plans: safePlans,
     activePlanId: plan?.id || null,
     plan,
-    records: Array.isArray(records) ? records : [],
+    records: normalizedRecords,
   }
 }
 

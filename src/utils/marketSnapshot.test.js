@@ -1,44 +1,21 @@
-import { describe, expect, it } from 'vitest'
-import { getLastRecordedPrices, getQuoteDisplayState, resolveMarketPrices } from './marketSnapshot'
-
-describe('resolveMarketPrices', () => {
-  it('keeps the latest valid historical price for each ticker', () => {
-    expect(getLastRecordedPrices([
-      { assets: [{ ticker: 'QLD', price: 90 }, { ticker: 'IBIT', price: 36 }] },
-      { assets: [{ ticker: 'QLD', price: 92 }] },
-    ])).toEqual({ QLD: 92, IBIT: 36 })
-  })
-
-  it('ignores invalid historical prices while preserving earlier valid values', () => {
-    expect(getLastRecordedPrices([
-      { assets: [{ ticker: 'QLD', price: 90 }] },
-      { assets: [{ ticker: 'QLD', price: 0 }] },
-    ])).toEqual({ QLD: 90 })
-  })
-
-  it('uses a valid quote over the last execution price without mutating the recorded price map', () => {
-    const recordedPrices = { QLD: 90, IBIT: 36 }
-
-    expect(resolveMarketPrices(['QLD', 'IBIT'], recordedPrices, { QLD: { price: 92.19 } })).toEqual({
-      QLD: { price: 92.19, source: 'quote' },
-      IBIT: { price: 36, source: 'record' },
-    })
-    expect(recordedPrices).toEqual({ QLD: 90, IBIT: 36 })
-  })
+import {it,expect} from 'vitest'
+import {getLastRecordedPrices,resolveMarketPrices,summarizePortfolio,getQuoteDisplayState} from './marketSnapshot'
+import {healthyPlan,healthyRecord} from '../test/fixtures'
+const asOfDate='2026-03-01'
+it('distinguishes first loading and total failure with no usable values from stale reference values',()=>{
+ expect(getQuoteDisplayState({loading:true,total:1,succeeded:0,hasUsableValue:false}).text).toBe('正在获取价格；暂无可用价格。')
+ expect(getQuoteDisplayState({loading:false,total:1,succeeded:0,hasUsableValue:false}).text).toBe('获取失败，暂无可用价格；请重试或手动输入。')
+ expect(getQuoteDisplayState({loading:true,total:1,succeeded:0,hasUsableValue:true}).text).toBe('刷新中，暂用上次获取或记录价格。')
 })
-
-describe('getQuoteDisplayState', () => {
-  it('labels an unavailable refresh as execution-date fallback when no quote succeeded', () => {
-    expect(getQuoteDisplayState({ loading: false, error: '行情服务暂时不可用。', asOf: '', quoteCount: 0 })).toEqual({
-      tone: 'fallback',
-      text: '报价更新失败，显示执行日价格。',
-    })
-  })
-
-  it('labels a partial refresh as stale when an earlier quote remains available', () => {
-    expect(getQuoteDisplayState({ loading: false, error: '行情服务暂时不可用。', asOf: '2026-07-15T12:30:00.000Z', quoteCount: 1 })).toEqual({
-      tone: 'stale',
-      text: '部分报价更新失败，显示上次成功报价。',
-    })
-  })
+it('keeps per-ticker record provenance and the adopted execution date',()=>{
+ const plan={...healthyPlan,assets:[...healthyPlan.assets,{ticker:'QQQ'}]};const records=[healthyRecord,{...healthyRecord,id:'later',date:'2026-02-02',assets:[{ticker:'QQQ',price:30,priceSource:'manual'}]}];const map=getLastRecordedPrices(records,{plan,asOfDate});expect(map.SPY).toMatchObject({price:120,recordDate:'2026-01-02',source:'record-unknown'});expect(map.QQQ).toMatchObject({price:30,recordDate:'2026-02-02',source:'record-manual'})
+})
+it('retains each successful fetch time, fails closed across changed effective events, and honors empty manual override',()=>{
+ const plan=healthyPlan,recorded=getLastRecordedPrices([healthyRecord],{plan,asOfDate});const auto={SPY:{price:140,lastSuccessfulFetchAt:'2026-02-01T00:00:00Z',basisKey:'[]',round:1}};expect(resolveMarketPrices({plan,recorded,automatic:auto,manual:{SPY:{raw:'',price:null,edited:true}},asOfDate}).SPY).toMatchObject({price:null,source:'missing'});const changed={...plan,splitEvents:[{id:'s',ticker:'SPY',effectiveDate:'2026-02-15',newShares:2,oldShares:1}]};expect(resolveMarketPrices({plan:changed,recorded,automatic:auto,asOfDate}).SPY).toMatchObject({reliable:false})
+})
+it('withholds complete total for positive missing/unreliable holdings; zero holdings do not require prices',()=>{
+ const assets=[{ticker:'SPY',currentShares:2},{ticker:'QQQ',currentShares:1}];expect(summarizePortfolio(assets,{SPY:{shares:2,reliable:true},QQQ:{shares:1,reliable:true}},{SPY:{price:120,reliable:true},QQQ:{price:null,reliable:false}})).toMatchObject({marketValue:null,knownValue:240,missingCount:1});expect(summarizePortfolio([{ticker:'QQQ',currentShares:0}],{QQQ:{shares:0,reliable:true}},{})).toMatchObject({marketValue:0,missingCount:0})
+})
+it('detects mixed sources and different successful rounds',()=>{
+ const assets=[{ticker:'A'},{ticker:'B'}],holdings={A:{shares:1,reliable:true},B:{shares:1,reliable:true}};expect(summarizePortfolio(assets,holdings,{A:{price:1,reliable:true,source:'auto',round:2},B:{price:2,reliable:true,source:'record-manual'}}).mixed).toBe(true);expect(summarizePortfolio(assets,holdings,{A:{price:1,reliable:true,source:'auto',round:2},B:{price:2,reliable:true,source:'auto',round:1}}).mixed).toBe(true)
 })

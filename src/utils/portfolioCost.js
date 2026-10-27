@@ -1,3 +1,4 @@
+import { canonicalTicker } from './planConstraints'
 function toPositiveNumber(value) {
   const numeric = Number(value)
   return Number.isFinite(numeric) && numeric > 0 ? numeric : 0
@@ -6,14 +7,14 @@ function toPositiveNumber(value) {
 function sumRecordedPosition(records = [], ticker) {
   return records.reduce(
     (summary, record) => {
-      const matchedAsset = record.assets?.find((asset) => asset.ticker === ticker)
+      const matchedAsset = record.assets?.find((asset) => canonicalTicker(asset.ticker) === canonicalTicker(ticker))
       if (!matchedAsset) {
         return summary
       }
 
       return {
         shares: summary.shares + (Number(matchedAsset.adjustedShares ?? matchedAsset.actualShares) || 0),
-        cost: summary.cost + (Number(matchedAsset.adjustedActualAmount ?? matchedAsset.actualAmount) || 0),
+        cost: summary.cost + (Number(matchedAsset.actualAmount ?? matchedAsset.adjustedActualAmount) || 0),
       }
     },
     { shares: 0, cost: 0 },

@@ -88,7 +88,7 @@ export default function ReleaseNotice() {
         >
           <div className="release-notice-heading">
             <div>
-              <p className="mini-kicker">{t('Latest update')}</p>
+              <p className="mini-kicker">{t('最近更新')}</p>
               <h3>{t('版本 {version}', { version: CURRENT_RELEASE.version })}</h3>
             </div>
             <button

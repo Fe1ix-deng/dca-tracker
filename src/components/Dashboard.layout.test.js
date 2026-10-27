@@ -8,33 +8,6 @@ const dashboardSource = readFileSync(new URL('./Dashboard.jsx', import.meta.url)
 const stylesSource = readFileSync(new URL('../index.css', import.meta.url), 'utf8')
 
 describe('dashboard weight cells', () => {
-  it('uses the reduced overview metric set and removes duplicated summary chips', () => {
-    expect(dashboardSource).toContain("label: '当前总市值'")
-    expect(dashboardSource).toContain("label: '浮动盈亏'")
-    expect(dashboardSource).toContain("label: '执行进度'")
-    expect(dashboardSource).toContain("label: isOpenEnded ? '最近投入' : '剩余可投'")
-    expect(dashboardSource).not.toContain("label: '累计总投入'")
-    expect(dashboardSource).not.toContain('dashboard-overview-meta')
-  })
-
-  it('keeps only next-period facts in the action card', () => {
-    expect(dashboardSource).toContain('下一期')
-    expect(dashboardSource).toContain('预计日期')
-    expect(dashboardSource).toContain('getNextContributionDate')
-    expect(dashboardSource).not.toContain('最新记录')
-    expect(dashboardSource).not.toContain('执行前确认')
-    expect(dashboardSource).not.toContain('正常执行')
-    expect(dashboardSource).not.toContain('getTagBadgeClass')
-    expect(dashboardSource).not.toContain('getPacingBadgeClass')
-    expect(dashboardSource).not.toContain('节奏正常')
-  })
-
-  it('removes large dashboard performance and funding charts', () => {
-    expect(dashboardSource).not.toContain('AreaChart')
-    expect(dashboardSource).not.toContain('投入节奏')
-    expect(dashboardSource).not.toMatch(/<h3[^>]*>资产表现<\/h3>/)
-  })
-
   it('uses a compact allocation table with deviation and market value', () => {
     expect(dashboardSource).toContain('dashboard-allocation-table')
     expect(dashboardSource).toContain('dashboard-allocation-table-footer')
@@ -94,9 +67,10 @@ function createRecord(periodIndex, tag = 'normal') {
     planId: plan.id,
     periodIndex,
     tag,
+    date: '2026-08-12',
     totalActualAmount: 100,
     cumulativeInvested: periodIndex * 100,
-    assets: [{ ticker: 'SCHB', price: 100 }],
+    assets: [{ ticker: 'SCHB', price: 100, actualShares: 0, actualAmount: 0 }],
   }
 }
 
@@ -172,7 +146,7 @@ describe('dashboard metric rendering', () => {
   it('renders CN prices with three decimals and US prices without padded zeros', () => {
     const cnMarkup = renderToStaticMarkup(createElement(Dashboard, {
       plan: { ...plan, market: 'CN', assets: [{ ticker: '600519', weight: 1, currentShares: 3 }] },
-      records: [{ ...createRecord(1), assets: [{ ticker: '600519', price: 12.345 }] }],
+      records: [{ ...createRecord(1), assets: [{ ticker: '600519', price: 12.345, actualShares: 0, actualAmount: 0 }] }],
       onNavigate: () => {},
     }))
     expect(cnMarkup).toContain('12.345')

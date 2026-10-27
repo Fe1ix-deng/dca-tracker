@@ -48,8 +48,8 @@ describe('SEO and GEO static assets', () => {
   it('restores homepage metadata after leaving FAQ in the SPA', () => {
     const faqSource = readProjectFile('src/components/Faq.jsx')
 
-    expect(faqSource).toContain('document.title = HOME_META.title')
+    expect(faqSource).toContain('document.title = home.title')
     expect(faqSource).toContain("canonical?.setAttribute('href', HOME_META.url)")
-    expect(faqSource).toContain("setMetaContent('meta[name=\"description\"]', HOME_META.description)")
+    expect(faqSource).toContain("setMetaContent('meta[name=\"description\"]', home.description)")
   })
 })

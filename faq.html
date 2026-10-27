@@ -6,7 +6,7 @@
     <meta name="google-site-verification" content="CPQSAMmFUcElWmIJT_UQJzJ-ihEhRSQAXEk0MuPqK2M" />
     <title>VA定投常见问题：怎么算、收益率怎么设、数据安全吗？ | DCA Tracker</title>
     <meta name="title" content="VA定投常见问题：怎么算、收益率怎么设、数据安全吗？ | DCA Tracker" />
-    <meta name="description" content="VA定投计算器常见问题解答：VA定投怎么算、目标收益率如何设置、数据是否安全、如何备份和换设备，以及是否支持A股和多个计划。" />
+    <meta name="description" content="VA 定投计算器常见问题：投资边界、费用和税费、行情延迟、ticker 请求、本地存储、备份与多计划管理。" />
     <meta name="keywords" content="VA定投怎么算,VA定投计算器,价值平均策略,VA目标收益率,定投数据备份,DCA常见问题" />
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
     <link rel="canonical" href="https://dca.020023.xyz/faq" />
@@ -35,10 +35,34 @@
       "mainEntity": [
         {
           "@type": "Question",
-          "name": "数据安全吗？",
+          "name": "这是投资建议吗？",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "所有数据保存在你的浏览器本地，不会上传到任何服务器。建议定期在历史页面导出 JSON 备份。"
+            "text": "不是投资建议，也不构成收益承诺。DCA Tracker 只帮助你记录计划和计算路径。"
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "数据和行情请求如何处理？",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "计划和记录保存在浏览器本地；自动行情可能延迟或失败，行情请求会把你输入的 ticker 发送到行情服务。"
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "计算是否包含全部费用和收益因素？",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "除非页面明确标注，计算不包含税费、手续费、滑点、分红和汇率影响。"
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "换设备或清除浏览器数据怎么办？",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "清除浏览器数据或更换设备前，请在历史页面导出 JSON；在新设备导入后可恢复计划和记录。"
           }
         },
         {
@@ -46,34 +70,20 @@
           "name": "支持 A 股吗？",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "支持 A 股代码识别，例如 600519.SS。自动获取价格目前主要用于美股，A 股用户可以手动输入价格。"
+            "text": "支持 A 股代码识别，例如 600519.SS。自动行情主要用于美股，A 股可手动输入价格。"
           }
         },
         {
-          "@type": "Question",
-          "name": "换设备后数据会丢失吗？",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "数据存储在当前浏览器本地。换设备前请导出 JSON 备份，再在新设备中导入即可恢复计划和历史记录。"
-          }
+            "@type": "Question",
+            "name": "可以管理多个计划吗？",
+            "acceptedAnswer": { "@type": "Answer", "text": "可以。顶部计划选择器用于切换已有计划；创建新计划请从设置页或“创建第一份计划”入口开始。" }
         },
-        {
-          "@type": "Question",
-          "name": "可以同时管理多个计划吗？",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "可以。页面顶部的计划下拉框支持创建、保存和切换多个相互独立的定投计划。"
+          {
+            "@type": "Question",
+            "name": "VA 策略的目标收益率如何设置？",
+            "acceptedAnswer": { "@type": "Answer", "text": "目标收益率只用于计算 VA 目标路径，可手动设置或参考自动测算，不代表未来收益。" }
           }
-        },
-        {
-          "@type": "Question",
-          "name": "VA 策略的目标收益率如何设置？",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "你可以手动设定，也可以点击自动测算，根据组合资产的历史表现得到参考值。目标收益率只用于计算 VA 目标路径，不代表实际收益，也不是收益承诺。"
-          }
-        }
-      ]
+        ]
     }
     </script>
 
@@ -87,16 +97,20 @@
         <h1>VA定投计算器常见问题</h1>
         <p>解答 VA 价值平均策略、目标收益率、数据安全、备份恢复和多计划管理等常见问题。</p>
         <section>
-          <h2>数据安全吗？</h2>
-          <p>所有数据保存在你的浏览器本地，不会上传到任何服务器。建议定期在历史页面导出 JSON 备份。</p>
+          <h2>这是投资建议吗？</h2>
+          <p>不是投资建议，也不构成收益承诺。DCA Tracker 只帮助你记录计划和计算路径。</p>
+          <h2>数据和行情请求如何处理？</h2>
+          <p>计划和记录保存在浏览器本地；自动行情可能延迟或失败，行情请求会把你输入的 ticker 发送到行情服务。</p>
+          <h2>计算是否包含全部费用和收益因素？</h2>
+          <p>除非页面明确标注，计算不包含税费、手续费、滑点、分红和汇率影响。</p>
+          <h2>换设备或清除浏览器数据怎么办？</h2>
+          <p>清除浏览器数据或更换设备前，请在历史页面导出 JSON；在新设备导入后可恢复计划和记录。</p>
           <h2>支持 A 股吗？</h2>
-          <p>支持 A 股代码识别，例如 600519.SS。自动获取价格目前主要用于美股，A 股用户可以手动输入价格。</p>
-          <h2>换设备后数据会丢失吗？</h2>
-          <p>换设备前请导出 JSON 备份，再在新设备中导入即可恢复计划和历史记录。</p>
-          <h2>可以同时管理多个计划吗？</h2>
-          <p>可以。计划下拉框支持创建、保存和切换多个相互独立的定投计划。</p>
+          <p>支持 A 股代码识别，例如 600519.SS。自动行情主要用于美股，A 股可手动输入价格。</p>
+          <h2>可以管理多个计划吗？</h2>
+          <p>可以。顶部计划选择器用于切换已有计划；创建新计划请从设置页或“创建第一份计划”入口开始。</p>
           <h2>VA 策略的目标收益率如何设置？</h2>
-          <p>可以手动设定，也可以使用自动测算得到参考值。它只用于计算目标路径，不代表实际收益。</p>
+          <p>目标收益率只用于计算 VA 目标路径，可手动设置或参考自动测算，不代表未来收益。</p>
         </section>
         <p><a href="/">返回 VA定投计算器</a></p>
       </main>

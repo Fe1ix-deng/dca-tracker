@@ -1,11 +1,17 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ChevronDown, ChevronUp, Plus, Save, Sparkles, Trash2 } from 'lucide-react'
 import { estimateTargetYield } from '../utils/yieldEstimator'
-import { formatNumericInput, normalizeNumericInput } from '../utils/numericInput'
+import { formatNumericInput } from '../utils/numericInput'
 import { normalizeDate, normalizeSplitEvents, parseSplitRatio } from '../utils/stockSplits'
-import { formatPrice, getPriceDecimals, normalizeMarket, normalizePriceInput } from '../utils/marketPrecision'
+import { getPriceDecimals } from '../utils/marketPrecision'
+import { formatMoney } from '../utils/money'
 import BackupImportButton from './BackupImportButton'
 import { useI18n } from '../i18n/index.jsx'
+import { createUuid } from '../utils/ids'
+import { validatePlanDraft } from '../utils/planValidation'
+import { inspectAssetIntegrity, validateAssetIdentityChange } from '../utils/assetIntegrity'
+import { canonicalTicker, WEIGHT_SUM_TOLERANCE } from '../utils/planConstraints'
+import PlanValidationSummary, { errorText } from './PlanValidationSummary'
 
 const strategyOptions = [
   { value: 'VA', label: 'VA定投' },
@@ -35,8 +41,7 @@ const frequencyOptions = [
   { value: 'monthly', label: '月' },
 ]
 
-const OPEN_ENDED_PLACEHOLDER_PERIODS = 9999
-const MAX_RESERVE_RATIO = 0.3
+import { MAX_RESERVE_RATIO, draftNumber } from '../utils/planConstraints'
 
 export function validateSplitEventDraft(draft, tickers = []) {
   const ticker = String(draft?.ticker || '').trim().toUpperCase()
@@ -60,7 +65,7 @@ function clampReserveRatio(value) {
 
 function createDraftPlan() {
   return {
-    id: '',
+    id: createUuid(),
     name: '',
     strategy: 'VA',
     market: 'US',
@@ -71,7 +76,7 @@ function createDraftPlan() {
     periodicTarget: 1000,
     currentPeriod: 0,
     frequency: 'monthly',
-    targetAnnualReturn: 0.25,
+    targetAnnualReturn: 0,
     assets: [],
     splitEvents: [],
     createdAt: '',
@@ -79,34 +84,24 @@ function createDraftPlan() {
 }
 
 export function normalizeFormPlan(source) {
-  const market = normalizeMarket(source?.market)
-  const normalizedAssets = [...(source?.assets || [])].map((asset) => ({
-    ...asset,
-    currentShares: formatNumericInput(asset.initialSharesOriginal ?? asset.initialShares ?? asset.currentShares),
-    initialAverageCost: formatNumericInput(asset.initialAverageCostOriginal ?? asset.initialAverageCost, {
-      decimalPlaces: getPriceDecimals(market),
-    }),
-  }))
-  const base = source ? { ...source, assets: normalizedAssets } : createDraftPlan()
-  const budgetMode = base.budgetMode === 'open-ended' ? 'open-ended' : 'fixed'
-  const hasPeriodicTarget = base.periodicTarget !== '' && base.periodicTarget !== null && base.periodicTarget !== undefined
-  const hasTotalBudget = base.totalBudget !== '' && base.totalBudget !== null && base.totalBudget !== undefined
-  const hasTotalPeriods = base.totalPeriods !== '' && base.totalPeriods !== null && base.totalPeriods !== undefined
-
+  const base = source ? { ...createDraftPlan(), ...source } : createDraftPlan()
+  const market = base.market
+  const display = (value, options) => {
+    if (value === undefined || value === null || value === '') return ''
+    return Number.isFinite(draftNumber(value)) && draftNumber(value) >= 0
+      ? formatNumericInput(value, options) : String(value)
+  }
   return {
-    ...createDraftPlan(),
     ...base,
-    market,
-    splitEvents: normalizeSplitEvents(base.splitEvents),
-    budgetMode,
-    reserveRatio: budgetMode === 'open-ended' ? 0 : clampReserveRatio(base.reserveRatio),
-    periodicTarget: hasPeriodicTarget ? formatNumericInput(base.periodicTarget) : '',
-    totalBudget: hasTotalBudget ? formatNumericInput(base.totalBudget) : '',
-    totalPeriods: budgetMode === 'open-ended'
-      ? formatNumericInput(Math.max(Number(base.totalPeriods) || OPEN_ENDED_PLACEHOLDER_PERIODS, OPEN_ENDED_PLACEHOLDER_PERIODS), { integerOnly: true })
-      : hasTotalPeriods
-        ? formatNumericInput(Math.max(1, Number(base.totalPeriods) || 1), { integerOnly: true })
-        : '',
+    assets: (Array.isArray(base.assets) ? base.assets : []).map(asset => ({
+      ...asset,
+      currentShares: display(asset?.initialSharesOriginal ?? asset?.initialShares ?? asset?.currentShares),
+      initialAverageCost: display(asset?.initialAverageCostOriginal ?? asset?.initialAverageCost, {decimalPlaces:getPriceDecimals(market)}),
+    })),
+    splitEvents: Array.isArray(base.splitEvents) ? base.splitEvents : [],
+    periodicTarget: String(base.periodicTarget ?? ''),
+    totalBudget: String(base.totalBudget ?? ''),
+    totalPeriods: String(base.totalPeriods ?? ''),
   }
 }
 
@@ -128,41 +123,13 @@ function createSplitEventDraft() {
   }
 }
 
-function formatMoney(value) {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(Number(value) || 0)
-}
 
 function formatPercent(value) {
   return `${Math.round((Number(value) || 0) * 100)}%`
 }
 
 function generateId() {
-  return `plan-${Date.now()}`
-}
-
-function rebalanceWeights(assets = []) {
-  if (!assets.length) {
-    return []
-  }
-
-  const equalWeight = 1 / assets.length
-  const rounded = assets.map((asset) => ({
-    ...asset,
-    weight: Number(equalWeight.toFixed(4)),
-  }))
-  const totalWeight = rounded.reduce((sum, asset) => sum + asset.weight, 0)
-  const diff = Number((1 - totalWeight).toFixed(4))
-
-  if (rounded.length) {
-    rounded[rounded.length - 1].weight = Number((rounded[rounded.length - 1].weight + diff).toFixed(4))
-  }
-
-  return rounded
+  return createUuid()
 }
 
 function getOptionCardClass(active) {
@@ -179,9 +146,23 @@ export function getSavedReserveRatio(isOpenEnded, reserveRatio) {
   return clampReserveRatio(reserveRatio ?? 0.2)
 }
 
-export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData, onImportBackup, onDeletePlan }) {
+export default function Settings({ plan, plans = [], records = [], assetIntegrity, persistenceError, onSavePlan, onNavigate, onClearAllData, onImportBackup, onDeletePlan }) {
   const { t } = useI18n()
-  const [form, setForm] = useState(() => normalizeFormPlan(plan))
+  const rowForm = source => {
+    const normalized = normalizeFormPlan(source)
+    return { ...normalized, assets: normalized.assets.map(asset => ({ ...asset, draftRowId: createUuid() })) }
+  }
+  const [form, setForm] = useState(() => rowForm(plan))
+  const [hasSubmitted, setHasSubmitted] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
+  const [serverErrors, setServerErrors] = useState([])
+  const [assetErrors, setAssetErrors] = useState([])
+  const [focusRequest, setFocusRequest] = useState(null)
+  const [editingPlanId, setEditingPlanId] = useState(plan?.id || null)
+  const rootRef = useRef(null), submissionRef = useRef(0), pendingRef = useRef(false)
+  const submittedIdRef = useRef(null)
+  useEffect(() => () => { submissionRef.current += 1 }, [])
   const [showAssetForm, setShowAssetForm] = useState(false)
   const [showSplitEvents, setShowSplitEvents] = useState(false)
   const [assetDraft, setAssetDraft] = useState(createAssetDraft())
@@ -189,7 +170,19 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData,
   const [estimatedRange, setEstimatedRange] = useState(null)
 
   useEffect(() => {
-    setForm(normalizeFormPlan(plan))
+    const nextId = plan?.id || null
+    const ownPublication = pendingRef.current && submittedIdRef.current === nextId
+    if (ownPublication) return
+    submissionRef.current += 1
+    pendingRef.current = false
+    setIsSaving(false)
+    setHasSubmitted(false)
+    setSaveError('')
+    setServerErrors([])
+    setAssetErrors([])
+    setFocusRequest(null)
+    setEditingPlanId(plan?.id || null)
+    setForm(rowForm(plan))
     setShowAssetForm(false)
     setShowSplitEvents(false)
     setAssetDraft(createAssetDraft())
@@ -204,120 +197,54 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData,
 
   const isOpenEnded = form.budgetMode === 'open-ended'
   const totalBudgetValue = Number(form.totalBudget) || 0
-  const totalPeriodsValue = Number(form.totalPeriods) || 0
-  const periodicTargetValue = Number(form.periodicTarget) || 0
   const reserveRatioValue = clampReserveRatio(form.reserveRatio)
   const reservedCash = totalBudgetValue * reserveRatioValue
   const deployableCash = totalBudgetValue - reservedCash
-  const isWeightValid = form.assets.length > 0 && Math.abs(totalWeight - 1) < 0.001
-  const hasValidBudget = isOpenEnded ? periodicTargetValue >= 0 : totalBudgetValue > 0 && totalPeriodsValue > 0
-  const canSave = form.name.trim() && hasValidBudget && isWeightValid
-
-  const updateField = (key, value) => {
-    setForm((current) => {
-      const normalizedValue = key === 'periodicTarget' || key === 'totalBudget'
-        ? normalizeNumericInput(value)
-        : key === 'totalPeriods'
-          ? normalizeNumericInput(value, { integerOnly: true })
-          : key === 'reserveRatio'
-            ? clampReserveRatio(value)
-          : value
-      const next = {
-        ...current,
-        [key]: normalizedValue,
-      }
-
-      if (key === 'budgetMode') {
-        return {
-          ...next,
-          budgetMode: value,
-          totalPeriods: value === 'open-ended'
-            ? String(Math.max(Number(current.totalPeriods) || OPEN_ENDED_PLACEHOLDER_PERIODS, OPEN_ENDED_PLACEHOLDER_PERIODS))
-            : String(Math.max(1, Number(current.totalPeriods) || 12)),
-          totalBudget: value === 'open-ended' ? '0' : current.totalBudget,
-        }
-      }
-
-      return next
-    })
+  const isWeightValid = form.assets.length > 0 && Math.abs(totalWeight - 1) <= WEIGHT_SUM_TOLERANCE
+  const original = editingPlanId ? plan : null
+  const integrity = assetIntegrity || inspectAssetIntegrity({ plans: plan ? [plan] : [], records }).byPlanId[plan?.id]
+  const validation = validatePlanDraft(form, { existingPlanIds: plans.map(p => p.id), editingPlanId, planRecordCount: records.filter(r => r.planId === editingPlanId).length, assetIntegrity: editingPlanId ? integrity : null })
+  const errors = hasSubmitted ? [...validation.errors, ...validateAssetIdentityChange(original, form, records), ...serverErrors] : []
+  const isProtected = asset => (editingPlanId && integrity?.protectedTickers?.has(canonicalTicker(asset.ticker))) || (form.splitEvents || []).some(event => canonicalTicker(event.ticker) === canonicalTicker(asset.ticker)) || Boolean(editingPlanId && integrity?.needsRepair)
+  const focusField = field => {
+    const target = [...(rootRef.current?.querySelectorAll('[data-field]') || [])].find(node => node.dataset.field === field)
+      || rootRef.current?.querySelector('[data-field="form"]')
+    target?.focus({ preventScroll: true })
+    target?.scrollIntoView({ block: 'center', behavior: 'instant' })
   }
-
+  useEffect(() => { if (focusRequest) focusField(focusRequest.field) }, [focusRequest])
+  const requestFocus = field => setFocusRequest({ field, tick: Date.now() })
+  const fieldProps = field => ({
+    'data-field': field, id: 'plan-' + field, 'aria-label': ({name:t('名称'),totalBudget:t('总预算（美元）'),totalPeriods:t('总期数'),periodicTarget:t('每期计划投入金额（美元）'),market:t('市场'),frequency:t('定投频率')})[field],
+    'aria-invalid': errors.some(error => error.field === field) || undefined,
+    'aria-describedby': errors.some(error => error.field === field) ? 'error-' + field : undefined,
+  })
+  const parameterProps = field => { const props = fieldProps(field); const { id, 'data-field': dataField, ...rest } = props; return rest }
+  const nearbyError = field => errors.some(error => error.field === field) ? <p id={'error-' + field} className="mt-2 text-sm text-warning">{errors.filter(error => error.field === field).map(error => errorText(error, t)).join(' ')}</p> : null
+  const updateField = (key, value) => {
+    setServerErrors([])
+    setForm(current => ({ ...current, [key]: value }))
+  }
   const saveAssetDraft = () => {
-    if (!assetDraft.ticker.trim()) {
-      return
-    }
-
-    setForm((current) => {
-      const nextAssets = rebalanceWeights([
-        ...current.assets,
-        {
-          ticker: assetDraft.ticker.trim().toUpperCase(),
-          name: assetDraft.name.trim() || assetDraft.ticker.trim().toUpperCase(),
-          weight: Number(assetDraft.weight) || 0,
-          currentShares: Number(assetDraft.currentShares) || 0,
-          initialShares: Number(assetDraft.currentShares) || 0,
-          initialAverageCost: Number(normalizePriceInput(assetDraft.initialAverageCost, current.market)) || 0,
-        },
-      ])
-
-      return {
-        ...current,
-        assets: nextAssets,
-      }
-    })
-
+    const candidate = { ...form, assets: [...form.assets, assetDraft] }
+    const prefix = 'assets[' + form.assets.length + ']'
+    const result = validatePlanDraft(candidate)
+    const localErrors = result.errors.filter(error => error.field.startsWith(prefix) || (error.field === 'assets' && form.assets.length >= 100))
+    if (localErrors.length) { setAssetErrors(localErrors); return }
+    setForm(current => ({ ...current, assets: [...current.assets, { ...assetDraft, ticker: canonicalTicker(assetDraft.ticker), name: assetDraft.name.trim() || canonicalTicker(assetDraft.ticker), draftRowId: createUuid() }] }))
+    setAssetErrors([])
     setAssetDraft(createAssetDraft())
     setShowAssetForm(false)
   }
-
-  const removeAsset = (ticker) => {
-    setForm((current) => ({
-      ...current,
-      assets: rebalanceWeights(current.assets.filter((asset) => asset.ticker !== ticker)),
-      splitEvents: (current.splitEvents || []).filter((event) => event.ticker !== ticker),
-    }))
+  const removeAsset = rowId => {
+    const asset = form.assets.find(item => item.draftRowId === rowId)
+    if (!asset || isProtected(asset)) return
+    setServerErrors([])
+    setForm(current => ({ ...current, assets: current.assets.filter(item => item.draftRowId !== rowId) }))
   }
-
-  const updateAssetWeight = (ticker, weight) => {
-    setForm((current) => ({
-      ...current,
-      assets: current.assets.map((asset) =>
-        asset.ticker === ticker
-          ? {
-              ...asset,
-              weight,
-            }
-          : asset,
-      ),
-    }))
-  }
-
-  const updateAssetCurrentShares = (ticker, currentShares) => {
-    setForm((current) => ({
-      ...current,
-      assets: current.assets.map((asset) =>
-        asset.ticker === ticker
-          ? {
-              ...asset,
-              currentShares,
-            }
-          : asset,
-      ),
-    }))
-  }
-
-  const updateAssetInitialAverageCost = (ticker, initialAverageCost) => {
-    setForm((current) => ({
-      ...current,
-      assets: current.assets.map((asset) =>
-        asset.ticker === ticker
-          ? {
-              ...asset,
-              initialAverageCost,
-            }
-          : asset,
-      ),
-    }))
+  const updateAsset = (rowId, field, value) => {
+    setServerErrors([])
+    setForm(current => ({ ...current, assets: current.assets.map(asset => asset.draftRowId === rowId ? { ...asset, [field]: value } : asset) }))
   }
 
   const handleEstimateYield = () => {
@@ -337,7 +264,7 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData,
       ...current,
       splitEvents: normalizeSplitEvents([
         ...(current.splitEvents || []),
-        { ...event, id: `split-${Date.now()}`, createdAt: new Date().toISOString() },
+        { ...event, id: createUuid(), createdAt: new Date().toISOString() },
       ]),
     }))
     setSplitEventDraft(createSplitEventDraft())
@@ -350,44 +277,51 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData,
     }))
   }
 
-  const handleSave = () => {
-    if (!canSave) {
-      return
-    }
-
+  const handleSave = async () => {
+    if (pendingRef.current) return
+    setHasSubmitted(true)
+    setServerErrors([])
+    const allErrors = [...validation.errors, ...validateAssetIdentityChange(original, form, records)]
+    if (allErrors.length) { requestFocus(allErrors[0].field); return }
     const nextPlan = {
-      ...form,
-      id: form.id || generateId(),
-      name: form.name.trim(),
-      budgetMode: isOpenEnded ? 'open-ended' : 'fixed',
-      totalBudget: isOpenEnded ? 0 : totalBudgetValue,
-      reserveRatio: getSavedReserveRatio(isOpenEnded, form.reserveRatio),
-      totalPeriods: isOpenEnded
-        ? Math.max(totalPeriodsValue || OPEN_ENDED_PLACEHOLDER_PERIODS, OPEN_ENDED_PLACEHOLDER_PERIODS)
-        : totalPeriodsValue,
-      periodicTarget: periodicTargetValue,
-      currentPeriod: Number(form.currentPeriod) || 0,
-      targetAnnualReturn: Number(form.targetAnnualReturn) || 0.25,
-      splitEvents: normalizeSplitEvents(form.splitEvents),
+      ...form, id: form.id || generateId(), name: form.name.trim(),
+      totalBudget: isOpenEnded ? 0 : Number(form.totalBudget),
+      reserveRatio: isOpenEnded ? 0 : Number(form.reserveRatio),
+      totalPeriods: Number(form.totalPeriods),
+      periodicTarget: isOpenEnded ? Number(form.periodicTarget) : Number.isFinite(draftNumber(form.periodicTarget)) ? Number(form.periodicTarget) : 0,
+      currentPeriod: Number(form.currentPeriod),
+      targetAnnualReturn: form.strategy === 'VA' ? Number(form.targetAnnualReturn) : 0,
       createdAt: form.createdAt || new Date().toISOString(),
-      assets: form.assets.map((asset) => ({
-        ...asset,
-        ticker: asset.ticker.trim().toUpperCase(),
-        name: asset.name?.trim() || asset.ticker.trim().toUpperCase(),
-        weight: Number(asset.weight) || 0,
-        currentShares: Number(asset.currentShares) || 0,
-        initialShares: Number(asset.currentShares) || 0,
-        initialSharesOriginal: Number(asset.currentShares) || 0,
-        initialAverageCost: Number(normalizePriceInput(asset.initialAverageCost, form.market)) || 0,
-        initialAverageCostOriginal: Number(normalizePriceInput(asset.initialAverageCost, form.market)) || 0,
+      assets: form.assets.map(({ draftRowId, ...asset }) => ({ ...asset,
+        ticker: canonicalTicker(asset.ticker), name: asset.name?.trim() || canonicalTicker(asset.ticker),
+        weight: Number(asset.weight), currentShares: draftNumber(asset.currentShares, true),
+        initialShares: draftNumber(asset.currentShares, true), initialSharesOriginal: draftNumber(asset.currentShares, true),
+        initialAverageCost: draftNumber(asset.initialAverageCost, true), initialAverageCostOriginal: draftNumber(asset.initialAverageCost, true),
       })),
     }
-
-    onSavePlan(nextPlan)
-    onNavigate('dashboard')
+    const token = ++submissionRef.current
+    pendingRef.current = true
+    submittedIdRef.current = nextPlan.id
+    setIsSaving(true)
+    let result
+    try { result = await onSavePlan?.(nextPlan, { editingPlanId }) }
+    catch (error) { result = { ok: false, error: error?.message || t('保存失败，请重试。') } }
+    if (token !== submissionRef.current) return
+    pendingRef.current = false
+    setIsSaving(false)
+    if (result?.ok === true) { setSaveError(''); onNavigate?.('dashboard'); return }
+    setSaveError(result?.error || t('保存失败：未收到成功确认，草稿已保留。'))
+    setServerErrors(result?.errors || [])
+    requestFocus('saveError')
   }
 
   const handleCreateNew = () => {
+    submissionRef.current += 1
+    setEditingPlanId(null)
+    setHasSubmitted(false)
+    setServerErrors([])
+    setAssetErrors([])
+    setSaveError('')
     setForm({
       ...createDraftPlan(),
       totalBudget: '50000',
@@ -438,11 +372,13 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData,
   }
 
   return (
-    <section className="console-grid xl:grid-cols-[minmax(0,1.18fr)_minmax(320px,0.82fr)]">
+    <section ref={rootRef} aria-busy={isSaving} className="console-grid xl:grid-cols-[minmax(0,1.18fr)_minmax(0,0.82fr)]">
+      <div aria-live="polite" aria-atomic="true" className="sr-only">{isSaving ? t('保存中') : saveError ? saveError : errors.length ? t('有 {count} 项错误：{first}', {count: errors.length, first: errorText(errors[0], t)}) : hasSubmitted ? t('表单校验已通过。') : ''}</div>
+      <fieldset disabled={isSaving} className="contents">
       <div className="card p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="label">Plan Configuration</p>
+            <p className="label">{t('计划设置')}</p>
             <h2 className="section-title">{t('计划设置')}</h2>
             <p className="muted-copy mt-3 max-w-2xl">
               {t('配置节奏、预算和资产权重。右侧检查面板会实时提示当前计划是否可以保存。')}
@@ -453,7 +389,7 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData,
             <div className="flex w-full flex-wrap gap-2 sm:w-auto">
               <button
                 type="button"
-                onClick={() => setForm(normalizeFormPlan(plan))}
+                onClick={() => { setForm(rowForm(plan)); setEditingPlanId(plan.id); setHasSubmitted(false); setServerErrors([]) }}
                 className="control-button"
               >
                 {t('撤销修改')}
@@ -491,26 +427,26 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData,
               <span className="text-sm text-muted-foreground">{t('名称')}</span>
               <input
                 type="text"
-                value={form.name}
+                {...fieldProps('name')} value={form.name}
                 placeholder={t('例如：2026 美股 VA 定投')}
                 onChange={(event) => updateField('name', event.target.value)}
                 className="surface-input"
               />
-            </label>
+            {nearbyError('name')}</label>
             <label className="mt-4 block space-y-2">
               <span className="text-sm text-muted-foreground">{t('市场')}</span>
               <select
-                value={form.market}
+                {...fieldProps('market')} value={form.market}
                 onChange={(event) => updateField('market', event.target.value)}
                 className="surface-select"
               >
                 {marketOptions.map((option) => (
                   <option key={option.value} value={option.value}>
-                    {t(option.label)} ({option.value})
+                    {t(option.label)}
                   </option>
                 ))}
               </select>
-            </label>
+            {nearbyError('market')}</label>
           </div>
 
           <div className="settings-section">
@@ -576,16 +512,16 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData,
                   <input
                     type="text"
                     inputMode="decimal"
-                    value={form.periodicTarget}
+                    {...fieldProps('periodicTarget')} value={form.periodicTarget}
                     onChange={(event) => updateField('periodicTarget', event.target.value)}
-                    onBlur={() => updateField('periodicTarget', formatNumericInput(form.periodicTarget))}
                     className="surface-input financial-input"
                   />
-                </label>
+                {nearbyError('periodicTarget')}</label>
                 <div className="surface-stat">
                   <p className="mini-kicker">{t('当前目标')}</p>
-                  <p className="mt-3 data-value text-xl">{formatMoney(form.periodicTarget)}</p>
+                  <p className="mt-3 data-value text-xl">{formatMoney(form.periodicTarget, plan)}</p>
                   <p className="mt-2 text-xs text-muted-foreground">{t('仅用于建议，不做硬性限制')}</p>
+                  {draftNumber(form.periodicTarget) === 0 ? <p className="mt-2 text-xs text-muted-foreground">{t('本期目标投入为 0，可自行决定实际投入。')}</p> : null}
                 </div>
               </div>
             </div>
@@ -598,48 +534,51 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData,
                   <input
                     type="text"
                     inputMode="decimal"
-                    value={form.totalBudget}
+                    {...fieldProps('totalBudget')} value={form.totalBudget}
                     onChange={(event) => updateField('totalBudget', event.target.value)}
-                    onBlur={() => updateField('totalBudget', formatNumericInput(form.totalBudget))}
                     className="surface-input financial-input"
                   />
-                </label>
+                {nearbyError('totalBudget')}</label>
 
                 <label className="space-y-2">
                   <span className="text-sm text-muted-foreground">{t('总期数')}</span>
                   <input
                     type="text"
                     inputMode="numeric"
-                    value={form.totalPeriods}
+                    {...fieldProps('totalPeriods')} value={form.totalPeriods}
                     onChange={(event) => updateField('totalPeriods', event.target.value)}
-                    onBlur={() => updateField('totalPeriods', formatNumericInput(form.totalPeriods, { integerOnly: true }))}
                     className="surface-input financial-input"
                   />
-                </label>
+                {nearbyError('totalPeriods')}</label>
               </div>
 
               <div className="mt-4 subtle-panel p-4">
                 <div className="flex items-center justify-between gap-4">
-                  <span className="text-sm text-muted-foreground">{t('保留现金比例')}</span>
-                  <span className="data-value">{Math.round(reserveRatioValue * 100)}%</span>
+                  <label htmlFor="reserve-ratio-range" className="text-sm text-muted-foreground">{t('保留现金比例')}</label>
+                  <output htmlFor="reserve-ratio-range" className="data-value">{Math.round(reserveRatioValue * 100)}%</output>
                 </div>
                 <input
+                  id="reserve-ratio-range"
                   type="range"
                   min="0"
                   max="0.3"
                   step="0.01"
                   value={reserveRatioValue}
+                  aria-label={t('保留现金比例')}
+                  aria-valuetext={`${Math.round(reserveRatioValue * 100)}%`}
                   onChange={(event) => updateField('reserveRatio', Number(event.target.value))}
                   className="mt-4 w-full accent-accent"
                 />
+                <label className="mt-3 block text-sm">{t('保留现金比例（小数）')}<input type="text" inputMode="decimal" {...fieldProps('reserveRatio')} value={String(form.reserveRatio)} onChange={event => updateField('reserveRatio', event.target.value)} className="surface-input financial-input mt-2" /></label>
+                {nearbyError('reserveRatio')}
                 <div className="mt-4 grid gap-3 md:grid-cols-2">
                   <div className="surface-stat">
                     <p className="mini-kicker">{t('保留现金')}</p>
-                    <p className="mt-3 data-value text-lg">{formatMoney(reservedCash)}</p>
+                    <p className="mt-3 data-value text-lg">{formatMoney(reservedCash, plan)}</p>
                   </div>
                   <div className="surface-stat">
                     <p className="mini-kicker">{t('可投资金')}</p>
-                    <p className="mt-3 data-value text-lg">{formatMoney(deployableCash)}</p>
+                    <p className="mt-3 data-value text-lg">{formatMoney(deployableCash, plan)}</p>
                   </div>
                 </div>
               </div>
@@ -652,7 +591,7 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData,
               <label className="mt-4 block space-y-2">
                 <span className="text-sm text-muted-foreground">{t('定投频率')}</span>
                 <select
-                  value={form.frequency}
+                  {...fieldProps('frequency')} value={form.frequency}
                   onChange={(event) => updateField('frequency', event.target.value)}
                   className="surface-select"
                 >
@@ -662,15 +601,15 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData,
                     </option>
                   ))}
                 </select>
-              </label>
+              {nearbyError('frequency')}</label>
             </div>
 
             {form.strategy === 'VA' ? (
               <div className="settings-section">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <p className="mini-kicker">{t('目标年化收益率')}</p>
-                    <p className="mt-2 text-sm text-muted-foreground">{t('你可以手动拖动，也可以基于组合历史收益自动测算。')}</p>
+                    <label htmlFor="target-return-range" className="mini-kicker">{t('目标年化收益率')}</label>
+                    <p className="mt-2 text-sm text-muted-foreground">{t('仅作为 VA 目标路径参数，不是收益预测、投资建议或收益承诺。')}</p>
                   </div>
                   <button
                     type="button"
@@ -684,18 +623,23 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData,
 
                 <div className="mt-4 subtle-row">
                   <span>{t('当前建议值')}</span>
-                  <span className="data-value">{formatPercent(form.targetAnnualReturn)}</span>
+                  <output htmlFor="target-return-range" className="data-value">{formatPercent(form.targetAnnualReturn)}</output>
                 </div>
 
                 <input
+                  id="target-return-range"
                   type="range"
-                  min="0.05"
+                  min="0"
                   max="0.5"
                   step="0.01"
-                  value={form.targetAnnualReturn}
+                  {...parameterProps('targetAnnualReturn')} value={Math.min(0.5, Math.max(0, Number(form.targetAnnualReturn) || 0))}
+                  aria-label={t('目标年化收益率')}
+                  aria-valuetext={formatPercent(form.targetAnnualReturn)}
                   onChange={(event) => updateField('targetAnnualReturn', Number(event.target.value))}
                   className="mt-4 w-full accent-accent"
                 />
+                <label className="mt-3 block text-sm">{t('目标年化收益率（小数）')}<input type="text" inputMode="decimal" {...fieldProps('targetAnnualReturn')} value={String(form.targetAnnualReturn)} onChange={event => updateField('targetAnnualReturn', event.target.value)} className="surface-input financial-input mt-2" /></label>
+                {nearbyError('targetAnnualReturn')}
 
                 {estimatedRange ? (
                   <div className="mt-4 subtle-panel p-4 text-xs leading-6 text-muted-foreground">
@@ -734,11 +678,12 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData,
               </button>
             </div>
 
+            <div {...fieldProps('assets')} tabIndex={-1} className="scroll-mt-20">{nearbyError('assets')}</div>
             {showAssetForm ? (
               <div className="mt-4 subtle-panel p-4">
                 <div className="grid gap-4 md:grid-cols-4">
                   <label className="space-y-2">
-                    <span className="text-sm text-muted-foreground">Ticker</span>
+                    <span className="text-sm text-muted-foreground">{t('标的')}</span>
                     <input
                       type="text"
                       value={assetDraft.ticker}
@@ -764,8 +709,7 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData,
                       inputMode="decimal"
                       value={assetDraft.currentShares}
                       placeholder="0"
-                      onChange={(event) => setAssetDraft((current) => ({ ...current, currentShares: normalizeNumericInput(event.target.value) }))}
-                      onBlur={() => setAssetDraft((current) => ({ ...current, currentShares: formatNumericInput(current.currentShares) }))}
+                      onChange={(event) => setAssetDraft((current) => ({ ...current, currentShares: event.target.value }))}
                       className="surface-input financial-input"
                     />
                   </label>
@@ -777,11 +721,7 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData,
                       inputMode="decimal"
                       value={assetDraft.initialAverageCost}
                       placeholder="0"
-                      onChange={(event) => setAssetDraft((current) => ({ ...current, initialAverageCost: normalizePriceInput(event.target.value, form.market) }))}
-                      onBlur={() => setAssetDraft((current) => ({
-                        ...current,
-                        initialAverageCost: current.initialAverageCost === '' ? '' : formatPrice(current.initialAverageCost, form.market),
-                      }))}
+                      onChange={(event) => setAssetDraft((current) => ({ ...current, initialAverageCost: event.target.value }))}
                       className="surface-input financial-input"
                     />
                   </label>
@@ -789,20 +729,24 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData,
 
                 <div className="mt-4">
                   <div className="flex items-center justify-between gap-4">
-                    <span className="text-sm text-muted-foreground">{t('权重')}</span>
-                    <span className="data-value">{Math.round((Number(assetDraft.weight) || 0) * 100)}%</span>
+                    <label htmlFor="new-asset-weight-range" className="text-sm text-muted-foreground">{t('新资产权重')}</label>
+                    <output htmlFor="new-asset-weight-range" className="data-value">{Math.round((Number(assetDraft.weight) || 0) * 100)}%</output>
                   </div>
                   <input
+                    id="new-asset-weight-range"
                     type="range"
                     min="0.05"
                     max="1"
                     step="0.01"
                     value={assetDraft.weight}
+                    aria-label={t('新资产权重')}
+                    aria-valuetext={`${Math.round((Number(assetDraft.weight) || 0) * 100)}%`}
                     onChange={(event) => setAssetDraft((current) => ({ ...current, weight: Number(event.target.value) }))}
                     className="mt-4 w-full accent-accent"
                   />
                 </div>
 
+                {assetErrors.length ? <div aria-label={t('新资产错误')} className="mt-3 text-sm text-warning">{assetErrors.map((error,i) => <p key={i}>{errorText(error,t)}</p>)}</div> : null}
                 <div className="mt-4 flex justify-end">
                   <button
                     type="button"
@@ -817,17 +761,20 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData,
 
             <div className="mt-4 space-y-3">
               {form.assets.length ? (
-                form.assets.map((asset) => (
-                  <div key={asset.ticker} className="subtle-panel p-4">
+                form.assets.map((asset, index) => (
+                  <div key={asset.draftRowId} className="subtle-panel p-4">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
-                        <p className="data-value text-base">{asset.ticker}</p>
+                        <label className="block text-sm">{t('资产代码 {index}', { index: index + 1 })}<input type="text" {...fieldProps('assets['+index+'].ticker')} aria-label={t('资产代码 {index}', {index:index+1})} value={asset.ticker} disabled={isProtected(asset) || isSaving} onChange={event=>updateAsset(asset.draftRowId,'ticker',event.target.value)} className="surface-input financial-input mt-2" /></label>
+                        {nearbyError('assets['+index+'].ticker')}
                         <p className="mt-1 text-xs text-muted-foreground">{asset.name}</p>
                       </div>
 
                       <button
                         type="button"
-                        onClick={() => removeAsset(asset.ticker)}
+                        onClick={() => removeAsset(asset.draftRowId)}
+                        disabled={isProtected(asset) || isSaving}
+                        aria-label={t('删除 {ticker}', {ticker:asset.ticker})}
                         className="control-button-danger"
                       >
                         <Trash2 size={14} />
@@ -835,21 +782,27 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData,
                       </button>
                     </div>
 
+                    {isProtected(asset) ? <p className="mt-3 text-sm text-muted-foreground">{t('此资产已有关联历史记录或拆合股事件，本阶段不能更改代码或删除，以免历史失去对应资产。')}</p> : null}
                     <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_240px_240px]">
                       <div>
                         <div className="flex items-center justify-between gap-4">
-                          <span className="text-sm text-muted-foreground">{t('权重')}</span>
-                          <span className="data-value">{Math.round((Number(asset.weight) || 0) * 100)}%</span>
+                          <label htmlFor={`asset-weight-range-${index}`} className="text-sm text-muted-foreground">{t('已有资产权重')}</label>
+                          <output htmlFor={`asset-weight-range-${index}`} className="data-value">{Math.round((Number(asset.weight) || 0) * 100)}%</output>
                         </div>
                         <input
+                          {...fieldProps('assets['+index+'].weight')}
+                          id={`asset-weight-range-${index}`}
                           type="range"
                           min="0"
                           max="1"
                           step="0.01"
                           value={asset.weight}
-                          onChange={(event) => updateAssetWeight(asset.ticker, Number(event.target.value))}
+                          aria-label={t('已有资产权重')}
+                          aria-valuetext={`${Math.round((Number(asset.weight) || 0) * 100)}%`}
+                          onChange={(event) => updateAsset(asset.draftRowId, 'weight', Number(event.target.value))}
                           className="mt-4 w-full accent-accent"
                         />
+                        {nearbyError('assets['+index+'].weight')}
                       </div>
 
                       <label className="space-y-2">
@@ -857,29 +810,24 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData,
                         <input
                           type="text"
                           inputMode="decimal"
-                          value={asset.currentShares}
+                          {...fieldProps('assets['+index+'].currentShares')} value={asset.currentShares}
                           placeholder="0"
-                          onChange={(event) => updateAssetCurrentShares(asset.ticker, normalizeNumericInput(event.target.value))}
-                          onBlur={() => updateAssetCurrentShares(asset.ticker, formatNumericInput(asset.currentShares))}
+                          onChange={(event) => updateAsset(asset.draftRowId, 'currentShares', event.target.value)}
                           className="surface-input financial-input"
                         />
-                      </label>
+                      {nearbyError('assets['+index+'].currentShares')}</label>
 
                       <label className="space-y-2">
                         <span className="text-sm text-muted-foreground">{t('计划开始前持仓均价')}</span>
                         <input
                           type="text"
                           inputMode="decimal"
-                          value={asset.initialAverageCost}
+                          {...fieldProps('assets['+index+'].initialAverageCost')} value={asset.initialAverageCost}
                           placeholder="0"
-                          onChange={(event) => updateAssetInitialAverageCost(asset.ticker, normalizePriceInput(event.target.value, form.market))}
-                          onBlur={() => updateAssetInitialAverageCost(
-                            asset.ticker,
-                            asset.initialAverageCost === '' ? '' : formatPrice(asset.initialAverageCost, form.market),
-                          )}
+                          onChange={(event) => updateAsset(asset.draftRowId, 'initialAverageCost', event.target.value)}
                           className="surface-input financial-input"
                         />
-                      </label>
+                      {nearbyError('assets['+index+'].initialAverageCost')}</label>
                     </div>
                   </div>
                 ))
@@ -890,9 +838,10 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData,
               )}
             </div>
 
-            <div className={`settings-weight-status mt-4 rounded-md border px-4 py-3 ${isWeightValid ? 'border-positive/30 bg-positive/10 text-positive' : 'border-warning/30 bg-warning/10 text-warning'}`}>
+            <div {...fieldProps('weights')} tabIndex={-1} className={`settings-weight-status mt-4 rounded-md border px-4 py-3 ${isWeightValid ? 'border-positive/30 bg-positive/10 text-positive' : 'border-warning/30 bg-warning/10 text-warning'}`}>
               <span>{t('当前总权重：')}</span>
-              <span className="data-value">{Math.round(totalWeight * 100)}%</span>
+              <span className="data-value">{Number((totalWeight * 100).toFixed(6))}%</span>
+              {nearbyError('weights')}
               <span>{!isWeightValid ? t('，请调整到 100% 后才能保存。') : t('，可以保存当前计划。')}</span>
             </div>
           </div>
@@ -947,7 +896,7 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData,
                     type="text"
                     inputMode="decimal"
                     value={splitEventDraft.ratio}
-                    placeholder="例如 2:1"
+                    placeholder={t('例如 2:1')}
                     onChange={(event) => setSplitEventDraft((current) => ({ ...current, ratio: event.target.value }))}
                     className="surface-input financial-input"
                   />
@@ -979,7 +928,7 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData,
       </div>
 
       <aside className="card h-fit p-5 xl:sticky xl:top-5">
-        <p className="label">Review</p>
+        <p className="label">{t('保存前检查')}</p>
         <h3 className="section-title">{t('保存前检查')}</h3>
 
         <div className="mt-5 grid gap-4">
@@ -996,7 +945,7 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData,
               </div>
               <div className="subtle-row">
                 <span>{t('策略')}</span>
-                <span className="text-white">{form.strategy}</span>
+                <span className="text-white">{t(form.strategy === 'VA' ? 'VA 定投' : 'DCA 定投')}</span>
               </div>
               <div className="subtle-row">
                 <span>{t('频率')}</span>
@@ -1011,21 +960,21 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData,
               {isOpenEnded ? (
                 <div className="subtle-row">
                   <span>{t('每期目标')}</span>
-                  <span className="data-subtle">{formatMoney(form.periodicTarget)}</span>
+                  <span className="data-subtle">{formatMoney(form.periodicTarget, plan)}</span>
                 </div>
               ) : (
                 <>
                   <div className="subtle-row">
                     <span>{t('总预算')}</span>
-                    <span className="data-subtle">{formatMoney(form.totalBudget)}</span>
+                    <span className="data-subtle">{formatMoney(form.totalBudget, plan)}</span>
                   </div>
                   <div className="subtle-row">
                     <span>{t('可投资金')}</span>
-                    <span className="data-subtle">{formatMoney(deployableCash)}</span>
+                    <span className="data-subtle">{formatMoney(deployableCash, plan)}</span>
                   </div>
                   <div className="subtle-row">
                     <span>{t('保留现金')}</span>
-                    <span className="data-subtle">{formatMoney(reservedCash)}</span>
+                    <span className="data-subtle">{formatMoney(reservedCash, plan)}</span>
                   </div>
                 </>
               )}
@@ -1050,20 +999,23 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData,
               <div className="subtle-row">
                 <span>{t('权重校验')}</span>
                 <span className={isWeightValid ? 'text-positive' : 'text-warning'}>
-                  {Math.round(totalWeight * 100)}%
+                  {Number((totalWeight * 100).toFixed(6))}%
                 </span>
               </div>
             </div>
           </div>
 
+          <div data-field="form" tabIndex={-1}>{nearbyError('form')}{nearbyError('currentPeriod')}{nearbyError('budgetMode')}{nearbyError('strategy')}</div>
+          <PlanValidationSummary errors={errors} onFocus={focusField} />
+          {(saveError || persistenceError) ? <div data-field="saveError" tabIndex={-1} aria-label={t('保存失败')} className="subtle-panel p-4 text-warning">{saveError || persistenceError}<p className="mt-2">{t('备份使用最后确认的已保存数据，不含尚未保存的草稿。')}</p></div> : null}
           <button
             type="button"
             onClick={handleSave}
-            disabled={!canSave}
+            disabled={isSaving}
             className="control-button-primary w-full disabled:cursor-not-allowed disabled:border-white/[0.05] disabled:bg-white/[0.02] disabled:text-muted"
           >
             <Save size={18} />
-            {t('保存当前计划')}
+            {isSaving ? t('保存中') : t('保存当前计划')}
           </button>
 
           <BackupImportButton onImportBackup={onImportBackup} className="control-button w-full" />
@@ -1078,6 +1030,7 @@ export default function Settings({ plan, onSavePlan, onNavigate, onClearAllData,
           </button>
         </div>
       </aside>
+      </fieldset>
     </section>
   )
 }

@@ -7,6 +7,7 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url))
 
 export default defineConfig({
   plugins: [react()],
+  test: { environmentOptions: { jsdom: { url: 'http://localhost/' } }, exclude: ['**/node_modules/**', '**/dist/**', 'e2e/**', 'docs/verification/**'], setupFiles: ['./src/test/setup.js'] },
   build: {
     rollupOptions: {
       input: {

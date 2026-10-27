@@ -31,9 +31,10 @@ describe('getPeriodicAmount', () => {
 })
 
 describe('getSuggestedShares', () => {
-  it('rounds to the nearest whole share', () => {
-    expect(getSuggestedShares(1666.67, 500)).toBe(3)
-    expect(getSuggestedShares(1666.67, 700)).toBe(2)
+  it('supports fractional shares and rounds to cents', () => {
+    expect(getSuggestedShares(1666.67, 500)).toBe(3.33)
+    expect(getSuggestedShares(1666.67, 700)).toBe(2.38)
+    expect(getSuggestedShares(10, 6)).toBe(1.66)
   })
 
   it('returns 0 when price is zero, negative, or missing', () => {
@@ -46,7 +47,7 @@ describe('getSuggestedShares', () => {
 describe('calculateDcaProjection', () => {
   it('returns both the share count and the rounded cost for the period', () => {
     expect(calculateDcaProjection({ amount: 1666.666, price: 500 })).toEqual({
-      shares: 3,
+      shares: 3.33,
       estimatedCost: 1666.67,
     })
   })

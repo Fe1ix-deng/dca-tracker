@@ -146,3 +146,7 @@ describe('portfolio cost helpers', () => {
     expect(result.averageCost).toBeNull()
   })
 })
+
+it('uses original monetary cost instead of stale split-adjusted amount caches',()=>{
+ expect(calculatePortfolioCostBasis([{ticker:'SPY',currentShares:20,initialShares:0}],[{assets:[{ticker:'spy',actualShares:10,adjustedShares:20,actualAmount:1199.99,adjustedActualAmount:9999}]}])).toMatchObject({costBasis:1199.99,hasKnownCost:true})
+})

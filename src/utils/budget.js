@@ -23,7 +23,7 @@ export function getRemainingDeployableBudget(plan = {}, cumulativeInvested = 0) 
 }
 
 export function getBudgetLimitedShares(suggestedShares, price, plan = {}, cumulativeInvested = 0) {
-  const safeSuggestedShares = Math.max(0, Math.floor(Number(suggestedShares) || 0))
+  const safeSuggestedShares = roundToTwo(Math.max(0, Number(suggestedShares) || 0))
   const safePrice = Number(price) || 0
 
   if (plan?.budgetMode === 'open-ended' || safePrice <= 0) {
@@ -31,5 +31,5 @@ export function getBudgetLimitedShares(suggestedShares, price, plan = {}, cumula
   }
 
   const remainingBudget = Math.max(0, getRemainingDeployableBudget(plan, cumulativeInvested))
-  return Math.min(safeSuggestedShares, Math.floor(remainingBudget / safePrice))
+  return Math.min(safeSuggestedShares, roundToTwo(Math.floor((remainingBudget / safePrice) * 100) / 100))
 }

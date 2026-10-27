@@ -226,6 +226,11 @@ textarea:focus-visible {
   outline-offset: 2px;
 }
 
+input[type='range']:focus-visible {
+  outline: 3px solid rgb(var(--color-accent-rgb) / 0.8);
+  outline-offset: 4px;
+}
+
 #root {
   height: 100vh;
   height: 100dvh;
@@ -632,7 +637,15 @@ textarea:focus-visible {
   }
 
   .shell-plan-empty {
-    @apply rounded-lg border border-line/[0.08] bg-white/[0.025] p-3;
+    @apply grid gap-2 rounded-lg border border-line/[0.08] bg-white/[0.025] p-3;
+  }
+
+  .shell-plan-create {
+    @apply inline-flex min-h-9 items-center justify-center rounded-md border border-accent/40 px-3 text-xs font-semibold text-accent transition-colors;
+  }
+
+  .shell-plan-create:hover {
+    @apply border-accent bg-accent/10 text-white;
   }
 
   .theme-toggle {
@@ -793,7 +806,15 @@ textarea:focus-visible {
   }
 
   .shell-plan-empty-compact {
-    @apply hidden;
+    @apply min-w-0 p-2;
+  }
+
+  .shell-plan-empty-compact span {
+    @apply sr-only;
+  }
+
+  .shell-plan-empty-compact .shell-plan-create {
+    @apply min-h-11 whitespace-nowrap px-2 text-[0.68rem];
   }
 
   .theme-toggle-compact {
@@ -1623,10 +1644,11 @@ textarea:focus-visible {
   @media (max-width: 380px) {
     .app-content {
       @apply px-2;
+      padding-top: 10.25rem;
     }
 
     .mobile-topbar {
-      @apply gap-2 px-2;
+      @apply min-h-[9.5rem] grid-cols-1 items-start gap-2 px-2;
     }
 
     .mobile-page-kicker {
@@ -1635,6 +1657,18 @@ textarea:focus-visible {
 
     .mobile-page-title {
       @apply text-[1.05rem];
+    }
+
+    .mobile-topbar-actions {
+      @apply w-full max-w-none flex-wrap justify-start;
+    }
+
+    .shell-plan-empty-compact {
+      flex: 0 0 100%;
+    }
+
+    .shell-plan-empty-compact .shell-plan-create {
+      width: 100%;
     }
 
     .shell-plan-compact {

@@ -4,6 +4,8 @@ import {
   loadLastReadReleaseVersion,
   normalizeRecords,
   saveLastReadReleaseVersion,
+  markDataChanged,
+  writeStorage as storageWrite,
 } from './storage'
 
 describe('computeHasUnbackedChanges', () => {
@@ -88,5 +90,30 @@ describe('release acknowledgement storage', () => {
         delete globalThis.window
       }
     }
+  })
+})
+
+describe('storage write results', () => {
+  it('reports localStorage write failures', () => {
+    const originalWindow = globalThis.window
+    globalThis.window = { localStorage: { setItem() { throw new Error('quota') } } }
+    try {
+      const result = storageWrite('key', { value: 1 })
+      expect(result.ok).toBe(false)
+      expect(result.error).toMatch(/quota/)
+    } finally { globalThis.window = originalWindow }
+  })
+
+  it('keeps an import change newer than an immediately preceding safety backup', () => {
+    const originalWindow = globalThis.window
+    const values = new Map([['dca-tracker:last-backup-at', JSON.stringify('2026-01-01T00:00:00.000Z')]])
+    globalThis.window = { localStorage: {
+      getItem: (key) => values.get(key) ?? null,
+      setItem: (key, value) => values.set(key, value),
+    } }
+    try {
+      markDataChanged()
+      expect(JSON.parse(values.get('dca-tracker:last-data-change-at'))).toBeTruthy()
+    } finally { globalThis.window = originalWindow }
   })
 })

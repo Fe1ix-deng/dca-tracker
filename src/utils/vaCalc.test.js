@@ -46,6 +46,20 @@ describe('vaCalc', () => {
     expect(getPeriodicGrowthRate({ ...monthlyPlan, frequency: 'biweekly' })).toBeCloseTo(Math.pow(1.2, 1 / 26) - 1, 10)
   })
 
+  it('handles zero, near -100%, invalid, and very large returns with finite values', () => {
+    const base = { ...monthlyPlan, budgetMode: 'open-ended', periodicTarget: 1000 }
+    expect(getTargetValue(100000, 1, { ...base, targetAnnualReturn: 0 })).toBe(100001000)
+    expect(Number.isFinite(getTargetValue(100000, 1, { ...base, targetAnnualReturn: -0.999999 }))).toBe(true)
+    expect(Number.isFinite(getTargetValue(100000, 1, { ...base, targetAnnualReturn: -1 }))).toBe(true)
+    expect(Number.isFinite(getTargetValue(100000, 1, { ...base, targetAnnualReturn: Number.NaN }))).toBe(true)
+    expect(Number.isFinite(getTargetValue(100000, 1, { ...base, targetAnnualReturn: Number.POSITIVE_INFINITY }))).toBe(true)
+  })
+
+  it('keeps open-ended targets finite at a very large period index', () => {
+    const target = getTargetValue(1000000, 0.5, { ...monthlyPlan, budgetMode: 'open-ended', periodicTarget: 1000, targetAnnualReturn: 0.2 })
+    expect(Number.isFinite(target)).toBe(true)
+  })
+
   describe('calcAllTargets', () => {
     it('sizes the matrix to totalPeriods for a fixed-budget plan', () => {
       const matrix = calcAllTargets(monthlyPlan)

@@ -35,14 +35,13 @@ function readStorage(key, fallback) {
 }
 
 function writeStorage(key, value) {
-  if (!canUseStorage()) {
-    return
-  }
-
+  if (!canUseStorage()) return { ok: false, error: '浏览器本地存储不可用。' }
   try {
     window.localStorage.setItem(key, JSON.stringify(value))
+    return { ok: true, error: null }
   } catch (error) {
     console.error(`Failed to write storage key: ${key}`, error)
+    return { ok: false, error: error?.message || '本地保存失败。' }
   }
 }
 
@@ -62,7 +61,7 @@ export function normalizeRecords(records) {
 }
 
 export function savePlan(plan) {
-  writeStorage(STORAGE_KEYS.plan, plan)
+  return writeStorage(STORAGE_KEYS.plan, plan)
 }
 
 export function loadPlan() {
@@ -70,7 +69,7 @@ export function loadPlan() {
 }
 
 export function savePlans(plans) {
-  writeStorage(STORAGE_KEYS.plans, Array.isArray(plans) ? plans : [])
+  return writeStorage(STORAGE_KEYS.plans, Array.isArray(plans) ? plans : [])
 }
 
 export function loadPlans() {
@@ -78,7 +77,7 @@ export function loadPlans() {
 }
 
 export function saveActivePlanId(activePlanId) {
-  writeStorage(STORAGE_KEYS.activePlanId, activePlanId || null)
+  return writeStorage(STORAGE_KEYS.activePlanId, activePlanId || null)
 }
 
 export function loadActivePlanId() {
@@ -86,15 +85,16 @@ export function loadActivePlanId() {
 }
 
 export function saveRecords(records) {
-  writeStorage(STORAGE_KEYS.records, normalizeRecords(records))
+  return writeStorage(STORAGE_KEYS.records, normalizeRecords(records))
 }
 
 export function loadRecords() {
-  return normalizeRecords(readStorage(STORAGE_KEYS.records, []))
+  const records = readStorage(STORAGE_KEYS.records, [])
+  return Array.isArray(records) ? records : []
 }
 
 export function saveLastBackupAt(timestamp) {
-  writeStorage(STORAGE_KEYS.lastBackupAt, timestamp)
+  return writeStorage(STORAGE_KEYS.lastBackupAt, timestamp)
 }
 
 export function loadLastBackupAt() {
@@ -102,7 +102,7 @@ export function loadLastBackupAt() {
 }
 
 export function saveLastDataChangeAt(timestamp) {
-  writeStorage(STORAGE_KEYS.lastDataChangeAt, timestamp)
+  return writeStorage(STORAGE_KEYS.lastDataChangeAt, timestamp)
 }
 
 export function loadLastDataChangeAt() {
@@ -110,7 +110,7 @@ export function loadLastDataChangeAt() {
 }
 
 export function saveLastReadReleaseVersion(version) {
-  writeStorage(STORAGE_KEYS.lastReadReleaseVersion, version || null)
+  return writeStorage(STORAGE_KEYS.lastReadReleaseVersion, version || null)
 }
 
 export function loadLastReadReleaseVersion() {
@@ -124,7 +124,12 @@ export function markBackedUp() {
 
 // Call whenever a plan or record is created, edited, or deleted.
 export function markDataChanged() {
-  saveLastDataChangeAt(new Date().toISOString())
+  const now = Date.now()
+  const lastBackup = Date.parse(loadLastBackupAt() || '')
+  const timestamp = Number.isFinite(lastBackup) && now <= lastBackup
+    ? new Date(lastBackup + 1).toISOString()
+    : new Date(now).toISOString()
+  saveLastDataChangeAt(timestamp)
 }
 
 // Pure comparison, kept separate from storage reads so it can be unit

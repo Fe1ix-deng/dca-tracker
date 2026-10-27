@@ -1,8 +1,12 @@
 import { getDeployableBudget } from './budget'
 
 function roundToTwo(value) {
-  return Number((Number(value) || 0).toFixed(2))
+  const numeric = Number(value)
+  if (!Number.isFinite(numeric)) return 0
+  return Number(numeric.toFixed(2))
 }
+
+const MAX_TARGET_VALUE = Number.MAX_SAFE_INTEGER
 
 function getPeriodsPerYear(frequency = 'monthly') {
   return frequency === 'biweekly' ? 26 : 12
@@ -13,8 +17,27 @@ function isOpenEndedPlan(plan = {}) {
 }
 
 function getPeriodicGrowthRate(plan = {}) {
-  const annualReturn = Number(plan.targetAnnualReturn) || 0
+  const rawAnnualReturn = Number(plan.targetAnnualReturn)
+  const annualReturn = Number.isFinite(rawAnnualReturn) && rawAnnualReturn > -1
+    ? Math.min(rawAnnualReturn, 10)
+    : 0
   return Math.pow(1 + annualReturn, 1 / getPeriodsPerYear(plan.frequency)) - 1
+}
+
+function getAccumulatedTarget(contribution, periodIndex, growthRate) {
+  const periods = periodIndex + 1
+  if (!Number.isFinite(contribution) || contribution <= 0) return 0
+  if (!Number.isFinite(growthRate) || growthRate <= -1) return roundToTwo(contribution)
+  if (Math.abs(growthRate) < 1e-12) return roundToTwo(Math.min(MAX_TARGET_VALUE, contribution * periods))
+
+  const logGrowth = Math.log1p(growthRate)
+  const exponent = periods * logGrowth
+  if (!Number.isFinite(exponent) || exponent > Math.log(MAX_TARGET_VALUE / contribution)) {
+    return MAX_TARGET_VALUE
+  }
+  const growthFactor = Math.exp(exponent)
+  const target = contribution * ((growthFactor - 1) / growthRate)
+  return roundToTwo(Math.min(MAX_TARGET_VALUE, target))
 }
 
 function getAssetPeriodicContribution(assetWeight, plan = {}) {
@@ -43,12 +66,7 @@ export function getTargetValue(periodIndex, assetWeight, plan = {}) {
       return roundToTwo(periodicContribution)
     }
 
-    let target = periodicContribution
-    for (let index = 1; index <= normalizedPeriodIndex; index += 1) {
-      target = target * (1 + growthRate) + periodicContribution
-    }
-
-    return roundToTwo(target)
+    return getAccumulatedTarget(periodicContribution, normalizedPeriodIndex, growthRate)
   }
 
   const firstTarget = getInitialTargetValue(normalizedAssetWeight, plan)
@@ -58,13 +76,7 @@ export function getTargetValue(periodIndex, assetWeight, plan = {}) {
   }
 
   const periodicContribution = getAssetPeriodicContribution(normalizedAssetWeight, plan)
-  let target = firstTarget
-
-  for (let index = 1; index <= normalizedPeriodIndex; index += 1) {
-    target = target * (1 + growthRate) + periodicContribution
-  }
-
-  return roundToTwo(target)
+  return getAccumulatedTarget(periodicContribution, normalizedPeriodIndex, growthRate)
 }
 
 export function getRequiredInvestment(currentValue, targetValue) {
@@ -74,7 +86,7 @@ export function getRequiredInvestment(currentValue, targetValue) {
 export function getSuggestedShares(requiredAmount, currentPrice) {
   const price = Number(currentPrice) || 0
   if (price <= 0) return 0
-  return Math.round((Number(requiredAmount) || 0) / price)
+  return Math.floor(Math.max(0, (Number(requiredAmount) || 0) / price) * 100) / 100
 }
 
 export function getUpdatedShares(previousShares, actualSharesBought) {
@@ -82,7 +94,7 @@ export function getUpdatedShares(previousShares, actualSharesBought) {
 }
 
 export function getTrackedShares(currentShares, initialShares) {
-  return roundToTwo(Math.max(0, (Number(currentShares) || 0) - (Number(initialShares) || 0)))
+  return Number(Math.max(0, (Number(currentShares) || 0) - (Number(initialShares) || 0)).toFixed(8))
 }
 
 export { getPeriodicGrowthRate }
@@ -100,8 +112,9 @@ export function calcAllTargets(plan = {}) {
   const totalPeriods = isOpenEndedPlan(plan)
     ? Math.max(Number(plan.currentPeriod) || 0, 0) + 1
     : Math.max(0, Number(plan.totalPeriods) || 0)
+  const boundedPeriods = Math.min(10000, totalPeriods)
 
-  return Array.from({ length: totalPeriods }, (_, periodIndex) =>
+  return Array.from({ length: boundedPeriods }, (_, periodIndex) =>
     assets.map((asset) => getTargetValue(periodIndex, Number(asset.weight) || 0, plan)),
   )
 }

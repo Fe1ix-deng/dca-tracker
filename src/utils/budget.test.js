@@ -17,9 +17,13 @@ describe('budget helpers', () => {
     expect(getRemainingDeployableBudget({ budgetMode: 'open-ended', totalBudget: 10000 }, 1250)).toBe(0)
   })
 
-  it('caps whole-share suggestions at the remaining fixed-plan budget', () => {
-    expect(getBudgetLimitedShares(5, 93, { budgetMode: 'fixed', totalBudget: 5500, reserveRatio: 0, totalPeriods: 12 }, 5045)).toBe(4)
+  it('caps share suggestions at the remaining fixed-plan budget', () => {
+    expect(getBudgetLimitedShares(5, 93, { budgetMode: 'fixed', totalBudget: 5500, reserveRatio: 0, totalPeriods: 12 }, 5045)).toBe(4.89)
     expect(getBudgetLimitedShares(5, 93, { budgetMode: 'fixed', totalBudget: 5500, reserveRatio: 0, totalPeriods: 12 }, 5500)).toBe(0)
-    expect(getBudgetLimitedShares(1, 70, { budgetMode: 'fixed', totalBudget: 100, reserveRatio: 0 }, 70)).toBe(0)
+    expect(getBudgetLimitedShares(1, 70, { budgetMode: 'fixed', totalBudget: 100, reserveRatio: 0 }, 70)).toBe(0.42)
+  })
+
+  it('caps fractional-share suggestions without exceeding the remaining budget', () => {
+    expect(getBudgetLimitedShares(5, 6, { budgetMode: 'fixed', totalBudget: 10, reserveRatio: 0 }, 0)).toBe(1.66)
   })
 })

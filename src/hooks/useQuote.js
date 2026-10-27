@@ -1,12 +1,13 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { fetchMarketQuotes } from '../services/marketQuotes'
 import { roundPrice } from '../utils/marketPrecision'
+import { createRequestGuard } from '../utils/requestGuard'
 
 export function normalizeManualPrice(value, marketOrPlan) {
   return roundPrice(value, marketOrPlan)
 }
 
-export async function fetchQuote(ticker, marketOrPlan) {
+export async function fetchQuote(ticker, marketOrPlan, options = {}) {
   const symbol = String(ticker || '').trim().toUpperCase()
   if (!symbol) {
     return {
@@ -16,7 +17,12 @@ export async function fetchQuote(ticker, marketOrPlan) {
   }
 
   try {
-    const result = await fetchMarketQuotes([symbol])
+    const result = options?.signal
+      ? await fetchMarketQuotes([symbol], options)
+      : await fetchMarketQuotes([symbol])
+    if (result.aborted || options.signal?.aborted) {
+      return { price: null, error: '', aborted: true }
+    }
     const numericPrice = Number.parseFloat(result.quotes?.[symbol]?.price)
     const roundedPrice = Number.isFinite(numericPrice) ? roundPrice(numericPrice, marketOrPlan) : null
 
@@ -31,7 +37,10 @@ export async function fetchQuote(ticker, marketOrPlan) {
       price: roundedPrice,
       error: '',
     }
-  } catch {
+  } catch (error) {
+    if (error?.name === 'AbortError' || options.signal?.aborted) {
+      return { price: null, error: '', aborted: true }
+    }
     return {
       price: null,
       error: '网络异常，无法获取最新行情。',
@@ -40,6 +49,8 @@ export async function fetchQuote(ticker, marketOrPlan) {
 }
 
 export function useQuote(symbol, manualPrice, marketOrPlan) {
+  const requestGuardRef = useRef(null)
+  if (!requestGuardRef.current) requestGuardRef.current = createRequestGuard()
   const [state, setState] = useState({
     price: normalizeManualPrice(manualPrice, marketOrPlan),
     source: manualPrice ? 'manual' : 'idle',
@@ -48,7 +59,10 @@ export function useQuote(symbol, manualPrice, marketOrPlan) {
   })
 
   const refreshQuote = useCallback(async () => {
+    const request = requestGuardRef.current.start()
+
     if (!symbol) {
+      if (!request.isCurrent()) return null
       setState({
         price: normalizeManualPrice(manualPrice, marketOrPlan),
         source: 'manual',
@@ -60,11 +74,14 @@ export function useQuote(symbol, manualPrice, marketOrPlan) {
 
     setState((current) => ({
       ...current,
+      price: normalizeManualPrice(manualPrice, marketOrPlan),
+      source: manualPrice ? 'manual' : 'idle',
       loading: true,
       error: '',
     }))
 
-    const result = await fetchQuote(symbol, marketOrPlan)
+    const result = await fetchQuote(symbol, marketOrPlan, { signal: request.signal })
+    if (!request.isCurrent() || result.aborted) return null
 
     if (typeof result.price === 'number') {
       setState({
@@ -86,10 +103,11 @@ export function useQuote(symbol, manualPrice, marketOrPlan) {
   }, [manualPrice, marketOrPlan, symbol])
 
   useEffect(() => {
-    let active = true
+    const request = requestGuardRef.current.start()
 
     async function run() {
       if (!symbol) {
+        if (!request.isCurrent()) return
         setState({
           price: normalizeManualPrice(manualPrice, marketOrPlan),
           source: 'manual',
@@ -99,13 +117,15 @@ export function useQuote(symbol, manualPrice, marketOrPlan) {
         return
       }
 
-      setState((current) => ({
-        ...current,
+      setState({
+        price: normalizeManualPrice(manualPrice, marketOrPlan),
+        source: manualPrice ? 'manual' : 'idle',
         loading: true,
-      }))
+        error: '',
+      })
 
-      const result = await fetchQuote(symbol, marketOrPlan)
-      if (!active) return
+      const result = await fetchQuote(symbol, marketOrPlan, { signal: request.signal })
+      if (!request.isCurrent() || result.aborted) return
 
       if (typeof result.price === 'number') {
         setState({
@@ -128,9 +148,11 @@ export function useQuote(symbol, manualPrice, marketOrPlan) {
     run()
 
     return () => {
-      active = false
+      requestGuardRef.current.invalidate()
     }
   }, [manualPrice, marketOrPlan, symbol])
+
+  useEffect(() => () => requestGuardRef.current?.invalidate(), [])
 
   return {
     ...state,

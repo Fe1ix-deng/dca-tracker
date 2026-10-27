@@ -35,9 +35,10 @@ export default function BackupImportButton({ onImportBackup, className = 'contro
         return
       }
 
-      onImportBackup?.(payload)
-    } catch {
-      window.alert(t('文件格式不正确，请使用本工具导出的 JSON 备份文件。'))
+      const result = await onImportBackup?.(payload)
+      if (result?.ok !== true) throw new Error(result?.error || t('导入失败，当前数据已保留。'))
+    } catch (error) {
+      window.alert(error?.message || t('文件格式不正确，请使用本工具导出的 JSON 备份文件。'))
     }
   }
 

@@ -4,13 +4,13 @@ import packageMetadata from '../../package.json'
 import packageLock from '../../package-lock.json'
 
 describe('release notice visibility', () => {
-  it('publishes the complete 2.6.1 user-facing update summary', () => {
-    expect(CURRENT_RELEASE.version).toBe('2.6.1')
-    expect(CURRENT_RELEASE.date).toBe('2026-09-08')
+  it('publishes the 2.7.0 user-facing update summary', () => {
+    expect(CURRENT_RELEASE.version).toBe('2.7.0')
+    expect(CURRENT_RELEASE.date).toBe('2026-10-28')
 
     const summary = CURRENT_RELEASE.items.join(' ')
-    expect(summary).toContain('完整 SEO 元数据')
-    expect(summary).toContain('社交媒体预览图')
+    expect(summary).toContain('保存失败时保留草稿')
+    expect(summary).toContain('拆合股估值统一口径')
   })
 
   it('keeps package metadata on the same release version', () => {

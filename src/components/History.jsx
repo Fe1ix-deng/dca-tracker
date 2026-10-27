@@ -4,7 +4,9 @@ import { formatNumericInput, normalizeNumericInput, toNumberOrFallback } from '.
 import { downloadFile } from '../utils/download'
 import BackupImportButton from './BackupImportButton'
 import { formatPrice, normalizePriceInput, roundPrice } from '../utils/marketPrecision'
+import { formatMoney } from '../utils/money'
 import { useI18n } from '../i18n/index.jsx'
+import { parseExecutionDate } from '../utils/executionDate'
 
 const filters = [
   { value: 'all', label: '全部' },
@@ -13,14 +15,6 @@ const filters = [
   { value: 'paused', label: '本期暂停' },
 ]
 
-function formatMoney(value) {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(Number(value) || 0)
-}
 
 export function formatHistoryPrice(value, marketOrPlan) {
   const numeric = Number(value)
@@ -28,7 +22,7 @@ export function formatHistoryPrice(value, marketOrPlan) {
 }
 
 function formatDate(value) {
-  return String(value || '').slice(0, 10)
+  return parseExecutionDate(value) || '日期未知'
 }
 
 function getTagClass(tag) {
@@ -50,7 +44,13 @@ function isZeroShareAsset(asset) {
   return roundToTwo(asset?.actualShares) === 0
 }
 
-function toCsv(records) {
+function escapeCsvField(value) {
+  const text = String(value ?? '')
+  const safeText = typeof value === 'string' && /^[=+\-@]/.test(text) ? `'${text}` : text
+  return /[",\n\r]/.test(safeText) ? `"${safeText.replaceAll('"', '""')}"` : safeText
+}
+
+export function toCsv(records) {
   const header = [
     'periodIndex',
     'date',
@@ -75,9 +75,9 @@ function toCsv(records) {
   const rows = records.flatMap((record) =>
     record.assets.map((asset) => [
       record.periodIndex + 1,
-      record.date,
+      parseExecutionDate(record.date) || '日期未知',
       record.tag,
-      (record.note || '').replaceAll(',', '，').replaceAll('\n', ' '),
+      record.note || '',
       asset.ticker,
       asset.price,
       asset.priceSource,
@@ -95,7 +95,7 @@ function toCsv(records) {
     ]),
   )
 
-  return [header, ...rows].map((row) => row.join(',')).join('\n')
+  return [header, ...rows].map((row) => row.map(escapeCsvField).join(',')).join('\r\n')
 }
 
 export function createHistoryEditDraft(record, marketOrPlan) {
@@ -266,10 +266,13 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
     return (
       <section className="section-shell">
         <div className="empty-state text-textSoft">
-          <p className="label">Execution Archive</p>
+          <p className="label">{t('历史记录')}</p>
           <h2 className="empty-state-title">{t('还没有计划')}</h2>
           <p className="body-copy mx-auto mt-3 max-w-xl">{t('请先创建计划，历史记录会在执行后自动累积。')}</p>
-          <div className="mt-5 flex justify-center">
+          <div className="mt-5 flex flex-wrap justify-center gap-2">
+            <button type="button" className="control-button-primary" onClick={() => onNavigate?.('settings')}>
+              {t('创建第一份计划')}
+            </button>
             <BackupImportButton onImportBackup={handleImportBackup} />
           </div>
         </div>
@@ -282,7 +285,7 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
       <div className="card p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
-            <p className="label">Execution Archive</p>
+            <p className="label">{t('历史记录')}</p>
             <h2 className="section-title">{t('历史记录')}</h2>
             {isOpenEnded ? (
               <p className="muted-copy mt-3 max-w-2xl">
@@ -321,7 +324,7 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
           </div>
           <div className="surface-stat">
             <p className="mini-kicker">{t('累计投入')}</p>
-            <p className="mt-3 data-value text-xl">{formatMoney(totalInvested)}</p>
+            <p className="mt-3 data-value text-xl">{formatMoney(totalInvested, plan)}</p>
             <p className="mt-2 text-xs text-muted-foreground">{t('所有记录的实际投入总和')}</p>
           </div>
           <div className="surface-stat">
@@ -374,16 +377,16 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
                     <div className="mt-4 grid gap-3 md:grid-cols-3">
                       <div className="subtle-panel p-4">
                         <p className="mini-kicker">{t('本期投入')}</p>
-                        <p className="mt-3 data-value text-xl">{formatMoney(record.totalActualAmount)}</p>
+                        <p className="mt-3 data-value text-xl">{formatMoney(record.totalActualAmount, plan)}</p>
                       </div>
                       <div className="subtle-panel p-4">
                         <p className="mini-kicker">{t('累计投入')}</p>
-                        <p className="mt-3 data-value text-xl">{formatMoney(record.cumulativeInvested)}</p>
+                        <p className="mt-3 data-value text-xl">{formatMoney(record.cumulativeInvested, plan)}</p>
                       </div>
                       <div className="subtle-panel p-4">
                         <p className="mini-kicker">{isOpenEnded ? t('标的数量') : t('当期剩余可投')}</p>
                         <p className="mt-3 data-value text-xl">
-                          {isOpenEnded ? record.assets.length : formatMoney(record.remainingBudget)}
+                          {isOpenEnded ? record.assets.length : formatMoney(record.remainingBudget, plan)}
                         </p>
                       </div>
                     </div>
@@ -483,7 +486,7 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
                             <div className="mt-4 subtle-row">
                               <span>{t('实际投入')}</span>
                               <span className="data-subtle">
-                                {formatMoney(roundToTwo(toNumberOrFallback(draftAsset.price, 0) * toNumberOrFallback(draftAsset.actualShares, 0)))}
+                                {formatMoney(roundToTwo(toNumberOrFallback(draftAsset.price, 0) * toNumberOrFallback(draftAsset.actualShares, 0)), plan)}
                               </span>
                             </div>
                           </div>
@@ -501,7 +504,7 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
                         >
                           {filters.filter((filter) => filter.value !== 'all').map((filter) => (
                             <option key={filter.value} value={filter.value}>
-                              {filter.label}
+                              {t(filter.label)}
                             </option>
                           ))}
                         </select>
@@ -552,7 +555,7 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
                                 {t('操作价格')} <span className="data-subtle">{formatHistoryPrice(asset.price, plan)}</span>
                               </p>
                               <p className="text-sm text-muted-foreground">
-                                {t('目标值')} <span className="data-subtle">{formatMoney(asset.targetValue)}</span>
+                                {t('目标值')} <span className="data-subtle">{formatMoney(asset.targetValue, plan)}</span>
                               </p>
                               {isZeroShareAsset(asset) && record.assets.length > 1 ? (
                                 <button
@@ -570,14 +573,14 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
                           <div className="mt-4 grid gap-3 md:grid-cols-4">
                             <div className="surface-stat">
                               <p className="mini-kicker">{asset.totalCurrentValueBefore !== undefined ? t('计划内持仓价值') : t('前持仓价值')}</p>
-                              <p className="mt-3 data-value text-base">{formatMoney(asset.currentValueBefore)}</p>
+                              <p className="mt-3 data-value text-base">{formatMoney(asset.currentValueBefore, plan)}</p>
                               {asset.totalCurrentValueBefore !== undefined ? (
-                                <p className="mt-2 text-xs text-muted-foreground">{t('全部持仓价值')} {formatMoney(asset.totalCurrentValueBefore)}</p>
+                                <p className="mt-2 text-xs text-muted-foreground">{t('全部持仓价值')} {formatMoney(asset.totalCurrentValueBefore, plan)}</p>
                               ) : null}
                             </div>
                             <div className="surface-stat">
                               <p className="mini-kicker">{t('建议买入')}</p>
-                              <p className="mt-3 data-value text-base">{formatMoney(asset.requiredAmount)}</p>
+                              <p className="mt-3 data-value text-base">{formatMoney(asset.requiredAmount, plan)}</p>
                             </div>
                             <div className="surface-stat">
                               <p className="mini-kicker">{t('建议股数')}</p>
@@ -586,7 +589,7 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
                             <div className="surface-stat">
                               <p className="mini-kicker">{t('实际买入')}</p>
                               <p className="mt-3 data-value text-base">{asset.actualShares} {t('股')}</p>
-                              <p className="mt-2 data-subtle text-sm">{formatMoney(asset.actualAmount)}</p>
+                              <p className="mt-2 data-subtle text-sm">{formatMoney(asset.actualAmount, plan)}</p>
                             </div>
                           </div>
                           {adjusted.hasAdjustment ? (
@@ -605,7 +608,7 @@ export default function History({ plan, records, onDeleteRecord, onEditRecord, o
           })
         ) : (
           <div className="empty-state text-muted-foreground">
-            <p className="label">No Records</p>
+            <p className="label">{t('暂无记录')}</p>
             <h2 className="empty-state-title">{t('当前筛选条件下还没有记录')}</h2>
           </div>
         )}

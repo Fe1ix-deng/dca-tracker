@@ -16,10 +16,10 @@ import ReleaseNotice from './ReleaseNotice'
 import { useI18n } from '../i18n/index.jsx'
 
 const navItems = [
-  { key: 'dashboard', label: '总览', title: 'Dashboard', icon: BarChart3 },
-  { key: 'operation', label: '本期操作', title: 'Operation', icon: WalletCards },
-  { key: 'history', label: '历史', title: 'History', icon: HistoryIcon },
-  { key: 'settings', label: '设置', title: 'Settings', icon: SettingsIcon },
+  { key: 'dashboard', label: '总览', title: '总览', icon: BarChart3 },
+  { key: 'operation', label: '本期操作', title: '本期操作', icon: WalletCards },
+  { key: 'history', label: '历史', title: '历史', icon: HistoryIcon },
+  { key: 'settings', label: '设置', title: '设置', icon: SettingsIcon },
   { key: 'faq', label: 'FAQ', title: 'FAQ', icon: MessageCircleQuestion },
 ]
 
@@ -30,13 +30,16 @@ const accentOptions = [
   { id: 'mono', label: '黑白灰', color: '#a5a8b2' },
 ]
 
-function PlanSelector({ plans, activePlanId, onChangeActivePlan, compact = false, t }) {
+function PlanSelector({ plans, activePlanId, onChangeActivePlan, onCreatePlan, compact = false, t }) {
   const hasPlans = Array.isArray(plans) && plans.length > 0
 
   if (!hasPlans) {
     return (
       <div className={compact ? 'shell-plan-empty shell-plan-empty-compact' : 'shell-plan-empty'}>
         <span>{t('暂无计划')}</span>
+        <button type="button" className="shell-plan-create" onClick={onCreatePlan}>
+          {t('创建第一份计划')}
+        </button>
       </div>
     )
   }
@@ -205,11 +208,11 @@ function LanguageControl({ language, onChangeLanguage, compact = false, t }) {
       </button>
       <button
         type="button"
-        aria-label="English"
+        aria-label={t('English')}
         aria-pressed={language === 'en-US'}
         className={language === 'en-US' ? 'language-option language-option-active' : 'language-option'}
         onClick={() => onChangeLanguage('en-US')}
-        title="English"
+        title={t('English')}
       >
         EN
       </button>
@@ -275,8 +278,8 @@ export default function Layout({
         <div className="sidebar-brand">
           <div className="brand-mark">DC</div>
           <div className="min-w-0">
-            <p>Personal Console</p>
-            <h1>DCA Tracker · VA定投计算器</h1>
+            <p>{t('Personal Console')}</p>
+            <h1>{t('DCA Tracker · VA定投计算器')}</h1>
           </div>
         </div>
 
@@ -297,6 +300,7 @@ export default function Layout({
             plans={plans}
             activePlanId={activePlanId}
             onChangeActivePlan={onChangeActivePlan}
+            onCreatePlan={() => onChangeTab('settings')}
             t={t}
           />
           <ThemeControl
@@ -320,6 +324,7 @@ export default function Layout({
             plans={plans}
             activePlanId={activePlanId}
             onChangeActivePlan={onChangeActivePlan}
+            onCreatePlan={() => onChangeTab('settings')}
             compact
             t={t}
           />

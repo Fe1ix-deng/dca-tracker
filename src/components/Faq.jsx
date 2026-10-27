@@ -15,15 +15,22 @@ const FAQ_META = {
 }
 
 const HOME_META = {
-  title: 'VA定投计算器与 DCA Tracker - 美股定投记录复盘工具',
-  description: '免费的VA定投计算器与美股DCA定投管理工具，支持价值平均策略、自动计算买入金额、投资轨迹复盘和多资产组合，数据仅保存在浏览器本地，无需注册。',
+  'zh-CN': { title: 'VA定投计算器与 DCA Tracker - 美股定投记录复盘工具', description: '免费的 VA 定投计算器与美股 DCA 定投管理工具，支持价值平均策略、自动计算买入金额、投资轨迹复盘和多资产组合。' },
+  'en-US': { title: 'Value Averaging Calculator and DCA Tracker', description: 'A value averaging and DCA tracker for planning contributions, recording trades, and reviewing portfolio paths.' },
   url: 'https://dca.020023.xyz/',
 }
 
 function setMetaContent(selector, content) {
-  const element = document.head.querySelector(selector)
-  if (!element) return null
+  let element = document.head.querySelector(selector)
+  if (!element) {
+    const match = selector.match(/meta\[(name|property)=['"]([^'"]+)['"]\]/)
+    if (!match) return null
+    element = document.createElement('meta')
+    element.setAttribute(match[1], match[2])
+    document.head.appendChild(element)
+  }
   element.setAttribute('content', content)
+  return element
 }
 
 export default function Faq({ onNavigate }) {
@@ -38,6 +45,7 @@ export default function Faq({ onNavigate }) {
     setMetaContent('meta[property="og:title"]', metadata.title)
     setMetaContent('meta[property="og:description"]', metadata.description)
     setMetaContent('meta[property="og:url"]', 'https://dca.020023.xyz/faq')
+    setMetaContent('meta[property="og:locale"]', language === 'en-US' ? 'en_US' : 'zh_CN')
     setMetaContent('meta[name="twitter:title"]', metadata.title)
     setMetaContent('meta[name="twitter:description"]', metadata.description)
     setMetaContent('meta[name="twitter:url"]', 'https://dca.020023.xyz/faq')
@@ -53,14 +61,16 @@ export default function Faq({ onNavigate }) {
     if (!existingSchema) document.head.appendChild(schema)
 
     return () => {
-      document.title = HOME_META.title
-      setMetaContent('meta[name="description"]', HOME_META.description)
-      setMetaContent('meta[name="title"]', HOME_META.title)
-      setMetaContent('meta[property="og:title"]', HOME_META.title)
-      setMetaContent('meta[property="og:description"]', HOME_META.description)
+      const home = HOME_META[language] || HOME_META['zh-CN']
+      document.title = home.title
+      setMetaContent('meta[name="description"]', home.description)
+      setMetaContent('meta[name="title"]', home.title)
+      setMetaContent('meta[property="og:title"]', home.title)
+      setMetaContent('meta[property="og:description"]', home.description)
       setMetaContent('meta[property="og:url"]', HOME_META.url)
-      setMetaContent('meta[name="twitter:title"]', HOME_META.title)
-      setMetaContent('meta[name="twitter:description"]', HOME_META.description)
+      setMetaContent('meta[property="og:locale"]', language === 'en-US' ? 'en_US' : 'zh_CN')
+      setMetaContent('meta[name="twitter:title"]', home.title)
+      setMetaContent('meta[name="twitter:description"]', home.description)
       setMetaContent('meta[name="twitter:url"]', HOME_META.url)
       canonical?.setAttribute('href', HOME_META.url)
       schema.remove()
@@ -75,7 +85,7 @@ export default function Faq({ onNavigate }) {
   return (
     <section className="section-shell faq-page">
       <header className="card faq-header">
-        <p className="label">FAQ</p>
+        <p className="label">{t('FAQ')}</p>
         <h1 className="mt-3 text-2xl font-semibold text-white">{t('VA定投计算器常见问题')}</h1>
         <p className="body-copy mt-3 max-w-3xl">
           {t('集中解答 VA 价值平均策略、目标收益率、数据安全、备份恢复和多计划管理等常见问题。')}
@@ -90,6 +100,12 @@ export default function Faq({ onNavigate }) {
             <p className="body-copy mt-3">{answer}</p>
           </article>
         ))}
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <button type="button" className="control-button-primary" onClick={() => onNavigate?.('settings')}>
+          {t('创建第一份计划')}
+        </button>
       </div>
 
       <a href="/" onClick={handleBack} className="control-button faq-back-link">

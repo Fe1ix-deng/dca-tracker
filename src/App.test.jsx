@@ -98,14 +98,14 @@ describe('rebuildPlanState', () => {
     expect(nextRecords[0].remainingBudget).toBe(15800)
   })
 
-  it('preserves CN price precision for rebuilt recommendations and legacy US rounding', () => {
+  it('preserves raw transaction prices and amounts while rounding derived recommendations', () => {
     const cnPlan = {
       ...plan,
       market: 'CN',
       budgetMode: 'open-ended',
       periodicTarget: 18.52,
       currentPeriod: 1,
-      assets: [{ ...plan.assets[0], currentShares: 0, weight: 1 }],
+      assets: [{ ...plan.assets[0], currentShares: 0, initialSharesOriginal: 0, weight: 1 }],
     }
     const cnRecord = {
       ...firstRecord,
@@ -116,13 +116,13 @@ describe('rebuildPlanState', () => {
     const cnAsset = cnRecords[0].assets[0]
 
     expect(cnAsset.price).toBe(12.345)
-    expect(cnAsset.suggestedShares).toBe(2)
-    expect(cnAsset.actualAmount).toBe(37.04)
+    expect(cnAsset.suggestedShares).toBe(1.5)
+    expect(cnAsset.actualAmount).toBe(200)
 
     const { market: _market, ...legacyPlan } = cnPlan
     const { nextRecords: legacyRecords } = rebuildPlanState(legacyPlan, [cnRecord])
 
-    expect(legacyRecords[0].assets[0].price).toBe(12.35)
+    expect(legacyRecords[0].assets[0].price).toBe(12.345)
 
     const cnSplitPlan = {
       ...cnPlan,
@@ -180,9 +180,9 @@ describe('rebuildPlanState', () => {
     const adjustedAsset = rebuilt.nextRecords[0].assets[0]
 
     expect(adjustedAsset.adjustedPrice).toBe(6.173)
-    expect(adjustedAsset.adjustedActualAmount).toBe(1.39)
+    expect(adjustedAsset.adjustedActualAmount).toBe(200)
     expect(calculatePortfolioCostBasis(rebuilt.nextPlan.assets, rebuilt.nextRecords)).toEqual({
-      costBasis: 13.74,
+      costBasis: 212.35,
       hasKnownCost: true,
     })
     expect(nextRecords).toEqual([])
@@ -212,7 +212,7 @@ describe('rebuildPlanState', () => {
     expect(nextRecords[0].assets[0].currentValueBefore).toBe(0)
     expect(nextRecords[0].assets[0].totalCurrentValueBefore).toBeCloseTo(20543.25, 2)
     expect(nextRecords[0].assets[0].requiredAmount).toBe(458.33)
-    expect(nextRecords[0].assets[0].suggestedShares).toBe(6)
+    expect(nextRecords[0].assets[0].suggestedShares).toBe(5.6)
   })
 
   it('keeps user-entered baseline holdings and cost separate from accumulated shares', () => {
@@ -263,7 +263,7 @@ describe('rebuildPlanState', () => {
 
     const { nextRecords } = rebuildPlanState(multiAssetPlan, [record])
 
-    expect(nextRecords[0].assets.map((asset) => asset.suggestedShares)).toEqual([1, 0])
+    expect(nextRecords[0].assets.map((asset) => asset.suggestedShares)).toEqual([0.71, 0.71])
   })
 
   it('rebuilds state when one zero-share asset is removed from a record', () => {
@@ -424,16 +424,6 @@ describe('rebuildPlanState', () => {
   })
 })
 
-describe('backup import wiring', () => {
-  it('replaces the entire imported plan list instead of appending plans one at a time', () => {
-    const source = readFileSync(new URL('./App.jsx', import.meta.url), 'utf8')
-    const importHandler = source.match(/const handleImportBackup = \(payload\) => \{([\s\S]*?)\n  \}\n\n  const handleClearAllData/)?.[1] ?? ''
-
-    expect(importHandler).toContain('replacePlans(nextPlans, nextActivePlanId)')
-    expect(importHandler).not.toContain('nextPlans.forEach')
-  })
-})
-
 describe('single-plan deletion wiring', () => {
   it('removes a plan, its records, and returns to Settings', () => {
     const source = readFileSync(new URL('./App.jsx', import.meta.url), 'utf8')
@@ -445,4 +435,34 @@ describe('single-plan deletion wiring', () => {
     expect(deleteHandler).toContain("navigateTo('settings')")
     expect(source).toContain('onDeletePlan={handleDeletePlan}')
   })
+})
+
+it('uses an explicit valuation day, is idempotent and preserves raw transactions during split rebuild',()=>{
+ const plan={id:'p',strategy:'DCA',budgetMode:'fixed',totalBudget:10000,totalPeriods:12,reserveRatio:0,assets:[{ticker:'QLD',weight:1}]};const firstRecord={id:'r',planId:'p',periodIndex:0};const p={...plan,createdAt:'2026-01-01T00:00:00Z',assets:[{...plan.assets[0],initialSharesOriginal:0,initialShares:0,currentShares:10}],splitEvents:[{id:'s',ticker:'QLD',effectiveDate:'2026-02-01',newShares:1,oldShares:4},{id:'future',ticker:'QLD',effectiveDate:'2026-04-01',newShares:2,oldShares:1}]};const r={...firstRecord,date:'2026-01-10',assets:[{ticker:'QLD',price:120,actualShares:10,actualAmount:1199.99}],totalActualAmount:1199.99};const options={asOfDate:'2026-03-01'};const a=rebuildPlanState(p,[r],[r],options),b=rebuildPlanState(a.nextPlan,a.nextRecords,a.nextRecords,options);expect(a.nextPlan.assets[0].currentShares).toBe(2.5);expect(a.nextRecords[0].assets[0]).toMatchObject({price:120,actualShares:10,actualAmount:1199.99,adjustedPrice:480});expect(a.nextRecords[0].totalActualAmount).toBe(1199.99);expect(b).toEqual(a)
+})
+
+it('does not infer extra initial shares by rounding fractional raw record shares',()=>{
+ const plan={id:'fractional',strategy:'DCA',budgetMode:'fixed',totalBudget:10000,totalPeriods:12,reserveRatio:0,createdAt:'2026-01-01',assets:[{ticker:'SPY',weight:1,currentShares:.12345678}]}
+ const record={id:'fractional-r',planId:plan.id,periodIndex:0,date:'2026-01-02',assets:[{ticker:'SPY',price:120,actualShares:.12345678,actualAmount:14.81}],totalActualAmount:14.81}
+ const options={asOfDate:'2026-03-01'},first=rebuildPlanState(plan,[record],[record],options)
+ expect(first.nextPlan.assets[0]).toMatchObject({initialSharesOriginal:0,currentShares:.12345678})
+ expect(rebuildPlanState(first.nextPlan,first.nextRecords,first.nextRecords,options)).toEqual(first)
+})
+
+it('keeps fractional shares across multiple derived records',()=>{
+ const plan={id:'fractional-many',strategy:'DCA',budgetMode:'fixed',totalBudget:10000,totalPeriods:12,reserveRatio:0,createdAt:'2026-01-01',assets:[{ticker:'SPY',weight:1,initialSharesOriginal:0,currentShares:0}]}
+ const records=[1,2,3].map((periodIndex)=>({id:`fractional-${periodIndex}`,planId:plan.id,periodIndex,date:`2026-01-0${periodIndex+1}`,assets:[{ticker:'SPY',price:1,actualShares:.123,actualAmount:.12}],totalActualAmount:.12}))
+ const rebuilt=rebuildPlanState(plan,records,records,{asOfDate:'2026-03-01'})
+ expect(rebuilt.nextRecords.find(r=>r.periodIndex===2).assets[0].trackedShares).toBeCloseTo(.246,8)
+ expect(rebuilt.nextPlan.assets[0].currentShares).toBeCloseTo(.369,8)
+})
+
+it('keeps fractional initial holdings precise through a split in VA history',()=>{
+ const plan={id:'va-fractional',strategy:'VA',budgetMode:'fixed',totalBudget:10000,totalPeriods:12,reserveRatio:0,createdAt:'2026-01-01',assets:[{ticker:'SPY',weight:1,initialSharesOriginal:.12345678,initialAverageCostOriginal:120,currentShares:.12345678}],splitEvents:[{id:'reverse',ticker:'SPY',effectiveDate:'2026-02-01',newShares:1,oldShares:4}]}
+ const records=[
+  {id:'va-fractional-r1',planId:plan.id,periodIndex:0,date:'2026-01-15',assets:[{ticker:'SPY',price:120,actualShares:.1001,actualAmount:12.01}],totalActualAmount:12.01},
+  {id:'va-fractional-r2',planId:plan.id,periodIndex:1,date:'2026-02-02',assets:[{ticker:'SPY',price:480,actualShares:0,actualAmount:0}],totalActualAmount:0},
+ ]
+ const rebuilt=rebuildPlanState(plan,records,records,{asOfDate:'2026-03-01'})
+ expect(rebuilt.nextRecords.find(r=>r.periodIndex===1).assets[0].trackedShares).toBeCloseTo(.025025,8)
 })

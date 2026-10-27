@@ -1,15 +1,11 @@
-import { useMemo, useState } from 'react'
-import { loadActivePlanId, loadPlan, loadPlans, saveActivePlanId, savePlan, savePlans } from '../utils/storage'
-import { normalizeSplitEvents } from '../utils/stockSplits'
+import { useCallback, useMemo, useRef, useState } from 'react'
+import { loadActivePlanId, loadPlan, loadPlans, loadRecords } from '../utils/storage'
+import { persistPlanSave } from '../utils/savePlanTransaction'
+import { inspectAssetIntegrity } from '../utils/assetIntegrity'
 import { normalizeMarket, roundPrice } from '../utils/marketPrecision'
 
 const defaultPlan = null
-const OPEN_ENDED_PLACEHOLDER_PERIODS = 9999
-const MAX_RESERVE_RATIO = 0.3
-
-function clampReserveRatio(value) {
-  return Math.min(MAX_RESERVE_RATIO, Math.max(0, Number(value) || 0))
-}
+import { OPEN_ENDED_PLACEHOLDER_PERIODS, draftNumber } from '../utils/planConstraints'
 
 function createEmptyPlan() {
   return {
@@ -24,7 +20,7 @@ function createEmptyPlan() {
     periodicTarget: 1000,
     currentPeriod: 0,
     frequency: 'monthly',
-    targetAnnualReturn: 0.25,
+    targetAnnualReturn: 0,
     assets: [],
     splitEvents: [],
     createdAt: '',
@@ -46,21 +42,20 @@ function normalizePlan(plan) {
         .map((asset) => ({
           ...asset,
           ...(Object.prototype.hasOwnProperty.call(asset, 'initialAverageCost')
-            ? { initialAverageCost: roundPrice(asset.initialAverageCost, market) }
+            ? { initialAverageCost: Number.isFinite(draftNumber(asset.initialAverageCost)) && draftNumber(asset.initialAverageCost) >= 0 ? roundPrice(asset.initialAverageCost, market) : asset.initialAverageCost }
             : {}),
           ...(Object.prototype.hasOwnProperty.call(asset, 'initialAverageCostOriginal')
-            ? { initialAverageCostOriginal: roundPrice(asset.initialAverageCostOriginal, market) }
+            ? { initialAverageCostOriginal: Number.isFinite(draftNumber(asset.initialAverageCostOriginal)) && draftNumber(asset.initialAverageCostOriginal) >= 0 ? roundPrice(asset.initialAverageCostOriginal, market) : asset.initialAverageCostOriginal }
             : {}),
         }))
       : [],
-    splitEvents: normalizeSplitEvents(plan.splitEvents),
-    market,
-    budgetMode,
-    reserveRatio: budgetMode === 'open-ended' ? 0 : clampReserveRatio(plan.reserveRatio),
-    periodicTarget: Number(plan.periodicTarget) || 0,
-    totalPeriods: budgetMode === 'open-ended'
-      ? Math.max(Number(plan.totalPeriods) || OPEN_ENDED_PLACEHOLDER_PERIODS, OPEN_ENDED_PLACEHOLDER_PERIODS)
-      : Math.max(1, Number(plan.totalPeriods) || 1),
+    splitEvents: plan.splitEvents ?? [],
+    market: plan.market ?? 'US',
+    budgetMode: plan.budgetMode ?? 'fixed',
+    reserveRatio: plan.reserveRatio ?? 0.2,
+    periodicTarget: plan.periodicTarget ?? 0,
+    currentPeriod: plan.currentPeriod ?? 0,
+    totalPeriods: plan.totalPeriods ?? (budgetMode === 'open-ended' ? OPEN_ENDED_PLACEHOLDER_PERIODS : 1),
   }
 }
 
@@ -109,113 +104,78 @@ export function removePlanState(current, planId) {
 }
 
 function loadPlanState() {
-  const storedPlans = loadPlans().map(normalizePlan).filter(Boolean)
-  const storedLegacyPlan = normalizePlan(loadPlan())
-  const mergedPlans = storedPlans.length
-    ? storedPlans
-    : storedLegacyPlan
-      ? [storedLegacyPlan]
-      : []
-
-  const activePlanId = loadActivePlanId() || mergedPlans[0]?.id || null
-
-  if (!storedPlans.length && storedLegacyPlan) {
-    savePlans(mergedPlans)
-    saveActivePlanId(activePlanId)
-  }
-
-  return {
-    plans: mergedPlans,
-    activePlanId,
-  }
+  const rawPlans = loadPlans()
+  const legacy = loadPlan()
+  const source = Array.isArray(rawPlans) && rawPlans.length ? rawPlans : legacy ? [legacy] : []
+  const loadedIntegrity = inspectAssetIntegrity({ plans: source, records: loadRecords() })
+  const plans = source.map(item => loadedIntegrity.byPlanId[item?.id]?.needsRepair ? item : normalizePlan(item)).filter(Boolean)
+  return { plans, activePlanId: loadActivePlanId() || plans[0]?.id || null, loadedIntegrity }
 }
 
 function persistPlanState(plans, activePlanId) {
-  savePlans(plans)
-  saveActivePlanId(activePlanId)
-  const activePlan = plans.find((plan) => plan.id === activePlanId) || null
-  savePlan(activePlan)
+  return persistPlanSave({ next: { plans, activePlanId, plan: plans.find(p => p.id === activePlanId) || null, records: loadRecords() } })
 }
 
 export function usePlan() {
   const [state, setState] = useState(() => loadPlanState())
+  const [storageError, setStorageError] = useState('')
 
   const plans = state.plans
   const activePlanId = state.activePlanId
   const plan = plans.find((item) => item.id === activePlanId) || plans[0] || null
 
-  const replacePlan = (nextPlan) => {
-    const normalizedPlan = normalizePlan(nextPlan)
-    setState((current) => {
-      const nextPlans = normalizedPlan
-        ? current.plans.some((item) => item.id === normalizedPlan.id)
-          ? current.plans.map((item) => (item.id === normalizedPlan.id ? normalizedPlan : item))
-          : [normalizedPlan, ...current.plans]
-        : current.plans
-
-      const nextActivePlanId = normalizedPlan?.id || current.activePlanId || null
-      persistPlanState(nextPlans, nextActivePlanId)
-
-      return {
-        plans: nextPlans,
-        activePlanId: nextActivePlanId,
-      }
-    })
-  }
-
-  const replacePlans = (nextPlans, nextActivePlanId = null) => {
-    setState(() => {
-      const nextState = normalizePlanState(nextPlans, nextActivePlanId)
-      persistPlanState(nextState.plans, nextState.activePlanId)
-      return nextState
-    })
-  }
-
-  const removePlan = (planId) => {
-    setState((current) => {
-      const nextState = removePlanState(current, planId)
-      if (nextState === current) {
-        return current
-      }
-
-      persistPlanState(nextState.plans, nextState.activePlanId)
-      return nextState
-    })
-  }
-
-  const setActivePlan = (nextActivePlanId) => {
-    setState((current) => {
-      const safeActivePlanId = current.plans.some((item) => item.id === nextActivePlanId)
-        ? nextActivePlanId
-        : current.plans[0]?.id || null
-      persistPlanState(current.plans, safeActivePlanId)
-      return {
-        ...current,
-        activePlanId: safeActivePlanId,
-      }
-    })
-  }
-
-  const resetPlan = () => {
-    setState({
-      plans: [],
-      activePlanId: null,
-    })
-  }
+  const stateRef = useRef(state)
+  stateRef.current = state
+  const publishPlanState = useCallback(nextState => {
+    stateRef.current = nextState
+    setState(nextState)
+    setStorageError('')
+  }, [])
+  const persistAndPublish = useCallback(nextState => {
+    const result = persistPlanState(nextState.plans, nextState.activePlanId)
+    setStorageError(result.ok ? '' : result.error)
+    if (result.ok) publishPlanState(nextState)
+    return result
+  }, [publishPlanState])
+  const replacePlan = useCallback(nextPlan => {
+    const current = stateRef.current
+    const normalized = normalizePlan(nextPlan)
+    if (!normalized) return { ok: false, error: '计划无效。' }
+    const nextPlans = current.plans.some(p => p.id === normalized.id)
+      ? current.plans.map(p => p.id === normalized.id ? normalized : p)
+      : [normalized, ...current.plans]
+    return persistAndPublish({ plans: nextPlans, activePlanId: normalized.id })
+  }, [persistAndPublish])
+  const replacePlans = useCallback((nextPlans, nextActivePlanId = null) =>
+    persistAndPublish(normalizePlanState(nextPlans, nextActivePlanId)), [persistAndPublish])
+  const removePlan = useCallback(planId => {
+    const current = stateRef.current, next = removePlanState(current, planId)
+    return next === current ? { ok: true } : persistAndPublish(next)
+  }, [persistAndPublish])
+  const setActivePlan = useCallback(nextActivePlanId => {
+    const current = stateRef.current
+    const id = current.plans.some(p => p.id === nextActivePlanId) ? nextActivePlanId : current.plans[0]?.id || null
+    return persistAndPublish({ ...current, activePlanId: id })
+  }, [persistAndPublish])
+  const resetPlan = useCallback(() => publishPlanState({ plans: [], activePlanId: null }), [publishPlanState])
+  const assetIntegrity = useMemo(() => state.loadedIntegrity || inspectAssetIntegrity({ plans: state.plans, records: loadRecords() }), [state])
 
   return useMemo(
     () => ({
       plan,
       plans,
+      assetIntegrity,
+      publishPlanState,
       activePlanId,
       setActivePlan,
       replacePlan,
       replacePlans,
       removePlan,
       resetPlan,
+      storageError,
       defaultPlan,
       createEmptyPlan,
     }),
-    [plan, plans, activePlanId],
+    [plan, plans, activePlanId, storageError, assetIntegrity, publishPlanState, setActivePlan, replacePlan, replacePlans, removePlan, resetPlan],
   )
 }
