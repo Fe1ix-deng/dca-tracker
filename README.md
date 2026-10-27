@@ -84,7 +84,7 @@ npm run dev
 
 ### 部署说明
 
-行情接口 `api/quotes.js` 使用 Vercel Serverless Function 运行，只读取服务端环境变量 `TWELVE_DATA_API_KEY`。当前 `wrangler.jsonc` 仅配置 Cloudflare 静态 assets 和 SPA 回退，Cloudflare 静态部署不会执行 `api/quotes.js`；如部署到 Cloudflare，请另外创建 Workers/Pages Function 并配置同名环境变量，或继续使用 Vercel 提供行情接口。
+行情接口 `api/quotes.js` 使用 Vercel Serverless Function 运行，只读取服务端环境变量 `TWELVE_DATA_API_KEY`。Cloudflare 的 `cloudflare/worker.js` 将 `/api/quotes` 转发到现有 Vercel 站点的固定行情路径，其余请求使用静态 assets；不转发浏览器 Cookie，也不在 Cloudflare 复制密钥。自行部署时请将该固定上游改为自己的 Vercel 地址，或实现独立行情服务。
 
 ### 自动行情获取（可选）
 
