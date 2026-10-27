@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { CalendarDays, CheckCircle2, LoaderCircle, RefreshCcw } from 'lucide-react'
-import { formatNumericInput, normalizeNumericInput, toNumberOrFallback } from '../utils/numericInput'
+import { formatNumericInput, toNumberOrFallback } from '../utils/numericInput'
 import { getPeriodicAmount, getSuggestedShares as getDcaSuggestedShares } from '../utils/dcaCalc'
 import {
   calcAllTargets,
@@ -50,7 +50,7 @@ export function getActualSharesForDecision({ tag, hasManualActualShares, actualS
     return 0
   }
 
-  return hasManualActualShares ? roundToTwo(toNumberOrFallback(actualSharesInput, 0)) : roundToTwo(suggestedShares)
+  return Math.max(0, Math.floor(toNumberOrFallback(hasManualActualShares ? actualSharesInput : suggestedShares, 0)))
 }
 
 export default function OperationPanel({ plan, records, onSaveRecord, onNavigate, asOfDate }) {
@@ -145,12 +145,12 @@ export default function OperationPanel({ plan, records, onSaveRecord, onNavigate
     const rawSuggestedShares = plan.strategy === 'VA'
       ? getVaSuggestedShares(requiredAmount, price)
       : getDcaSuggestedShares(requiredAmount, price)
-    const suggestedShares = getBudgetLimitedShares(
+    const suggestedShares = Math.floor(getBudgetLimitedShares(
       rawSuggestedShares,
       price,
       plan,
       historicalInvested + suggestedBudgetReserved,
-    )
+    ))
     suggestedBudgetReserved = roundToTwo(suggestedBudgetReserved + suggestedShares * price)
     const hasManualActualShares = state.actualShares !== null && state.actualShares !== undefined
     const actualShares = getActualSharesForDecision({
@@ -159,6 +159,7 @@ export default function OperationPanel({ plan, records, onSaveRecord, onNavigate
       actualSharesInput: state.actualShares,
       suggestedShares,
     })
+    const actualSharesValid = tag === 'paused' || !hasManualActualShares || (/^[0-9]+$/.test(state.actualShares) && Number.isSafeInteger(Number(state.actualShares)))
     const actualAmount = roundToTwo(actualShares * price)
 
     return {
@@ -175,6 +176,7 @@ export default function OperationPanel({ plan, records, onSaveRecord, onNavigate
       actualSharesInput: state.actualShares,
       actualSharesDisplay: tag === 'paused' ? '0' : hasManualActualShares ? state.actualShares : formatNumericInput(suggestedShares),
       hasManualActualShares,
+      actualSharesValid,
       actualShares,
       actualAmount,
     }
@@ -191,6 +193,7 @@ export default function OperationPanel({ plan, records, onSaveRecord, onNavigate
     && currentAssets.length > 0
     && currentAssets.every((asset) => !asset.loading && asset.reliable && toNumberOrFallback(asset.price, 0) > 0)
     && isWithinBudget
+    && currentAssets.every(asset => asset.actualSharesValid)
 
   const updateAssetState = (ticker, patch) => {
     setAssetStates((current) =>
@@ -374,31 +377,35 @@ export default function OperationPanel({ plan, records, onSaveRecord, onNavigate
                     <span className="sr-only">{asset.ticker} {t('实际买入股数')}</span>
                     <input
                       type="text"
-                      inputMode="decimal"
-                      step="0.01"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      step="1"
+                      aria-invalid={!asset.actualSharesValid}
+                      aria-describedby={!asset.actualSharesValid ? 'shares-error-' + asset.ticker : undefined}
                       value={asset.actualSharesDisplay}
                       placeholder="0"
-                      onChange={(event) => updateAssetState(asset.ticker, { actualShares: normalizeNumericInput(event.target.value) })}
+                      onChange={(event) => updateAssetState(asset.ticker, { actualShares: event.target.value })}
                       onFocus={(event) => {
                         if (!asset.hasManualActualShares) {
                           event.target.select()
                         }
                       }}
                       onBlur={() => {
-                        if (asset.actualSharesInput === null || asset.actualSharesInput === undefined || asset.actualSharesInput === '') {
+                        if (asset.actualSharesInput === null || asset.actualSharesInput === undefined || asset.actualSharesInput === '' || !asset.actualSharesValid) {
                           return
                         }
 
                         updateAssetState(asset.ticker, {
-                          actualShares: formatNumericInput(asset.actualSharesInput),
+                          actualShares: formatNumericInput(asset.actualSharesInput, { integerOnly: true }),
                         })
                       }}
                       className="operation-field operation-share-field financial-input"
                     />
                   </label>
+                  {!asset.actualSharesValid ? <p id={'shares-error-' + asset.ticker} role="alert" className="mt-2 text-sm text-negative">{t('请输入整数股数。')}</p> : null}
                   <div className="mt-4 subtle-row operation-footer-row">
                     <span className="operation-footer-label">{t('实际投入金额')}</span>
-                    <span className="operation-footer-value">{asset.reliable?formatMoney(asset.actualAmount, plan):'--'}</span>
+                    <span className="operation-footer-value">{asset.reliable && asset.actualSharesValid?formatMoney(asset.actualAmount, plan):'--'}</span>
                   </div>
                 </div>
               </div>

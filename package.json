@@ -1,7 +1,7 @@
 {
   "name": "dca-tracker",
   "private": true,
-  "version": "2.7.0",
+  "version": "2.7.1",
   "type": "module",
   "description": "A free investment tracking tool for US stock DCA and VA strategies. Automatically calculates buy amounts, visualizes portfolio trajectory, with local data storage.",
   "keywords": [
