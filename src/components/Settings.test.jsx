@@ -25,14 +25,14 @@ describe('Settings helpers', () => {
     expect(form.market).toBe('CN')
   })
 
-  it('normalizes initial average cost using the selected market precision', () => {
+  it('preserves existing average-cost precision when opening settings', () => {
     expect(normalizeFormPlan({
       market: 'CN',
       assets: [{ ticker: '600519', initialAverageCost: 12.3456 }],
-    }).assets[0].initialAverageCost).toBe('12.345')
+    }).assets[0].initialAverageCost).toBe('12.3456')
     expect(normalizeFormPlan({
       assets: [{ ticker: 'QLD', initialAverageCost: 12.345 }],
-    }).assets[0].initialAverageCost).toBe('12.34')
+    }).assets[0].initialAverageCost).toBe('12.345')
   })
 
   it('aligns the asset-weight status text and value on a shared baseline', () => {
@@ -88,4 +88,8 @@ describe('Settings helpers', () => {
     expect(settingsSource).toContain("{t('删除当前计划')}")
     expect(settingsSource).toMatch(/\{plan \? \([\s\S]*?删除当前计划[\s\S]*?\) : null\}/)
   })
+})
+
+it('preserves fractional baseline holdings when opening settings', () => {
+  expect(normalizeFormPlan({assets:[{ticker:'SPY',initialSharesOriginal:2.12345678}]}).assets[0].currentShares).toBe('2.12345678')
 })

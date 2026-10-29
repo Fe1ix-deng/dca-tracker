@@ -31,8 +31,8 @@ describe('OperationPanel helpers', () => {
   })
 })
 
-it('floors suggested and defensive saved share quantities to nonnegative integers', () => {
+it('floors recommendations but preserves two-decimal actual purchases', () => {
   expect(getActualSharesForDecision({tag:'normal',hasManualActualShares:false,suggestedShares:15.89})).toBe(15)
-  expect(getActualSharesForDecision({tag:'normal',hasManualActualShares:true,actualSharesInput:'3.9'})).toBe(3)
+  expect(getActualSharesForDecision({tag:'normal',hasManualActualShares:true,actualSharesInput:'3.9'})).toBe(3.9)
   expect(getActualSharesForDecision({tag:'normal',hasManualActualShares:true,actualSharesInput:'-2'})).toBe(0)
 })

@@ -50,7 +50,7 @@ export function getActualSharesForDecision({ tag, hasManualActualShares, actualS
     return 0
   }
 
-  return Math.max(0, Math.floor(toNumberOrFallback(hasManualActualShares ? actualSharesInput : suggestedShares, 0)))
+  return Math.max(0, hasManualActualShares ? roundToTwo(toNumberOrFallback(actualSharesInput, 0)) : Math.floor(toNumberOrFallback(suggestedShares, 0)))
 }
 
 export default function OperationPanel({ plan, records, onSaveRecord, onNavigate, asOfDate }) {
@@ -159,7 +159,7 @@ export default function OperationPanel({ plan, records, onSaveRecord, onNavigate
       actualSharesInput: state.actualShares,
       suggestedShares,
     })
-    const actualSharesValid = tag === 'paused' || !hasManualActualShares || (/^[0-9]+$/.test(state.actualShares) && Number.isSafeInteger(Number(state.actualShares)))
+    const actualSharesValid = tag === 'paused' || !hasManualActualShares || (/^(?:[0-9]+(?:\.[0-9]{0,2})?|\.[0-9]{1,2})$/.test(state.actualShares) && Number.isFinite(Number(state.actualShares)) && Number(state.actualShares) <= Number.MAX_SAFE_INTEGER)
     const actualAmount = roundToTwo(actualShares * price)
 
     return {
@@ -377,9 +377,8 @@ export default function OperationPanel({ plan, records, onSaveRecord, onNavigate
                     <span className="sr-only">{asset.ticker} {t('实际买入股数')}</span>
                     <input
                       type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      step="1"
+                      inputMode="decimal"
+                      step="0.01"
                       aria-invalid={!asset.actualSharesValid}
                       aria-describedby={!asset.actualSharesValid ? 'shares-error-' + asset.ticker : undefined}
                       value={asset.actualSharesDisplay}
@@ -396,13 +395,13 @@ export default function OperationPanel({ plan, records, onSaveRecord, onNavigate
                         }
 
                         updateAssetState(asset.ticker, {
-                          actualShares: formatNumericInput(asset.actualSharesInput, { integerOnly: true }),
+                          actualShares: formatNumericInput(asset.actualSharesInput),
                         })
                       }}
                       className="operation-field operation-share-field financial-input"
                     />
                   </label>
-                  {!asset.actualSharesValid ? <p id={'shares-error-' + asset.ticker} role="alert" className="mt-2 text-sm text-negative">{t('请输入整数股数。')}</p> : null}
+                  {!asset.actualSharesValid ? <p id={'shares-error-' + asset.ticker} role="alert" className="mt-2 text-sm text-negative">{t('股数须为非负数，最多两位小数。')}</p> : null}
                   <div className="mt-4 subtle-row operation-footer-row">
                     <span className="operation-footer-label">{t('实际投入金额')}</span>
                     <span className="operation-footer-value">{asset.reliable && asset.actualSharesValid?formatMoney(asset.actualAmount, plan):'--'}</span>

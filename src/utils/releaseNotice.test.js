@@ -9,7 +9,7 @@ describe('release notice visibility', () => {
     expect(CURRENT_RELEASE.date).toBe('2026-10-28')
 
     const summary = CURRENT_RELEASE.items.join(' ')
-    expect(summary).toContain('本期操作仅支持整数股')
+    expect(summary).toContain('实际买入股数支持两位小数')
     expect(summary).toContain('精简卡片重复说明')
   })
 

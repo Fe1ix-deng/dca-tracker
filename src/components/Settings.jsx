@@ -1,9 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ChevronDown, ChevronUp, Plus, Save, Sparkles, Trash2 } from 'lucide-react'
 import { estimateTargetYield } from '../utils/yieldEstimator'
-import { formatNumericInput } from '../utils/numericInput'
 import { normalizeDate, normalizeSplitEvents, parseSplitRatio } from '../utils/stockSplits'
-import { getPriceDecimals } from '../utils/marketPrecision'
 import { formatMoney } from '../utils/money'
 import BackupImportButton from './BackupImportButton'
 import { useI18n } from '../i18n/index.jsx'
@@ -85,18 +83,13 @@ function createDraftPlan() {
 
 export function normalizeFormPlan(source) {
   const base = source ? { ...createDraftPlan(), ...source } : createDraftPlan()
-  const market = base.market
-  const display = (value, options) => {
-    if (value === undefined || value === null || value === '') return ''
-    return Number.isFinite(draftNumber(value)) && draftNumber(value) >= 0
-      ? formatNumericInput(value, options) : String(value)
-  }
+  const display = value => value === undefined || value === null ? '' : String(value)
   return {
     ...base,
     assets: (Array.isArray(base.assets) ? base.assets : []).map(asset => ({
       ...asset,
       currentShares: display(asset?.initialSharesOriginal ?? asset?.initialShares ?? asset?.currentShares),
-      initialAverageCost: display(asset?.initialAverageCostOriginal ?? asset?.initialAverageCost, {decimalPlaces:getPriceDecimals(market)}),
+      initialAverageCost: display(asset?.initialAverageCostOriginal ?? asset?.initialAverageCost),
     })),
     splitEvents: Array.isArray(base.splitEvents) ? base.splitEvents : [],
     periodicTarget: String(base.periodicTarget ?? ''),
